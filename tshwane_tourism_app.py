@@ -1350,43 +1350,7 @@ def load_real_tourism_data():
             places = data.get('places', [])
             restaurants = data.get('restaurants', [])
 
-            # Clean and enhance place names for better display
-            enhanced_places = []
-            for place in places:
-                enhanced_place = place.copy()
-
-                # Extract meaningful names from descriptions
-                description = place.get('description', '')
-                name = place.get('name', '')
-
-                # Create better display names based on content
-                if 'museum' in description.lower():
-                    if 'ditsong' in description.lower():
-                        enhanced_place['display_name'] = "Ditsong Museum of Natural History"
-                        enhanced_place['short_description'] = "Home to Mrs Ples - 2-million-year-old ancestor skull"
-                    else:
-                        enhanced_place['display_name'] = "Tshwane Museums"
-                        enhanced_place['short_description'] = "Historical and modern museums with grand architecture"
-                elif 'nature reserve' in description.lower():
-                    enhanced_place['display_name'] = "Tshwane Nature Reserves"
-                    enhanced_place['short_description'] = "Big 5 wildlife reserves with rhino, lion, giraffe"
-                elif 'architecture' in description.lower():
-                    enhanced_place['display_name'] = "Tshwane Cultural Heritage"
-                    enhanced_place['short_description'] = "Grand architecture, monuments, and sculptures"
-                elif 'tourist map' in description.lower():
-                    enhanced_place['display_name'] = "Tshwane Tourist Information"
-                    enhanced_place['short_description'] = "Comprehensive tourist maps and guides"
-                else:
-                    enhanced_place['display_name'] = name[:60] + "..." if len(name) > 60 else name
-                    enhanced_place['short_description'] = description[:100] + "..." if len(description) > 100 else description
-
-                # Add real website source verification
-                enhanced_place['verified_source'] = True
-                enhanced_place['crawled_from'] = place.get('source_url', 'http://www.visittshwane.co.za')
-
-                enhanced_places.append(enhanced_place)
-
-            # Load contact information
+            # Load contact info
             contact_info = {}
             if contacts_file.exists():
                 with open(contacts_file, 'r', encoding='utf-8') as f:
@@ -1398,14 +1362,19 @@ def load_real_tourism_data():
                 with open(social_file, 'r', encoding='utf-8') as f:
                     social_links = json.load(f)
 
-                # Remove duplicates and enhance
-                unique_links = {}
-                for link in social_links:
-                    platform = link.get('platform', '').lower()
-                    if platform not in unique_links:
-                        unique_links[platform] = link
+            # Apply AI enhancements to places
+            enhanced_places = []
+            for place in places:
+                # Add display name for consistency
+                if 'display_name' not in place:
+                    place['display_name'] = place.get('name', 'Unknown Place')
 
-                social_links = list(unique_links.values())
+                # Add short description
+                if 'short_description' not in place and 'description' in place:
+                    desc = place['description']
+                    place['short_description'] = desc[:100] + "..." if len(desc) > 100 else desc
+
+                enhanced_places.append(place)
 
             # Update session state with real data
             st.session_state.places_data = enhanced_places
@@ -1562,6 +1531,7 @@ def display_enhanced_sidebar_content():
 
 def display_main_content():
     """Main content area with component system"""
+    # Create main columns at the top level
     col1, col2 = st.columns([2, 1])
 
     with col1:
@@ -1595,10 +1565,10 @@ def display_main_content():
         """, unsafe_allow_html=True)
 
         # Map controls
-        col1, col2 = st.columns([1, 1])
-        with col1:
+        map_col1, map_col2 = st.columns([1, 1])
+        with map_col1:
             show_places = st.checkbox("Show Places", value=True, key="map_places")
-        with col2:
+        with map_col2:
             show_restaurants = st.checkbox("Show Restaurants", value=True, key="map_restaurants")
 
         # Create map data from real website content
@@ -1648,13 +1618,56 @@ def display_main_content():
         display_enhanced_booking_form()
 
     with col2:
-        # Weather-based suggestions with AI
+        # Weather-based suggestions with AI - Call outside of columns
         st.subheader("🌤️ AI Weather Recommendations")
-        display_ai_weather_suggestions()
+        # Move the function content here instead of calling it
+        display_weather_content()
 
         # Real-time analytics
         st.subheader("📊 Real-time Analytics")
         display_analytics_dashboard()
+
+def display_weather_content():
+    """Content for weather suggestions - extracted from display_ai_weather_suggestions"""
+    weather_options = ["Sunny", "Rainy", "Cloudy", "Hot", "Cold", "Windy", "Mild"]
+
+    # Simple layout without nested columns
+    selected_weather = st.selectbox("Current Weather Condition", weather_options)
+    
+    auto_detect = st.button("🌡️ Auto-Detect", help="Automatically detect weather (simulated)")
+    if auto_detect:
+        import random
+        selected_weather = random.choice(weather_options)
+        SessionManager.add_notification(f"Weather auto-detected: {selected_weather}", "info")
+
+    # Use a separate section for the recommendations
+    if st.button("🤖 Get AI Recommendations"):
+        if st.session_state.places_data:
+            with st.spinner("AI is analyzing weather conditions..."):
+                suggestions = get_enhanced_weather_suggestions(selected_weather, st.session_state.places_data)
+
+                if suggestions:
+                    st.write(f"**🎯 AI Recommendations for {selected_weather.lower()} weather:**")
+
+                    # Display recommendations without nested columns
+                    for suggestion in suggestions:
+                        with st.expander(f"🏛️ {suggestion['name']} (Score: {suggestion.get('weather_suitability_score', 0)})"):
+                            st.write(f"**Type:** {suggestion.get('type', 'Unknown')}")
+                            st.write(f"**Why recommended:** {suggestion.get('reason', 'Good match for current weather')}")
+                            st.write(f"**Weather suitability:** {suggestion.get('weather_suitability_score', 0)}/5")
+
+                            if st.button(f"📋 Quick Book", key=f"quick_book_{suggestion['name']}"):
+                                st.session_state.selected_place = suggestion
+                                SessionManager.add_notification(f"Quick-selected {suggestion['name']}", "success")
+                else:
+                    st.info("No specific suggestions available for this weather condition.")
+        else:
+            st.info("Please load website data first.")
+
+# Keep this function for compatibility but make it call the new function
+def display_ai_weather_suggestions():
+    """Compatibility wrapper for display_weather_content"""
+    display_weather_content()
 
 def display_sidebar_content():
     """Display social links and contact information"""
@@ -1828,15 +1841,17 @@ def display_enhanced_gallery():
                 if source_url:
                     st.markdown(f"**Source:** [{source_url}]({source_url})")
 
-            # Weather suitability display
+            # Weather suitability display - FIX: Remove nested columns
             if weather_data:
                 with st.expander("🌤️ Weather Suitability"):
-                    weather_cols = st.columns(5)
+                    # Instead of columns, use a simple table or list
+                    st.write("**Weather Suitability Ratings:**")
                     weather_icons = {"sunny": "☀️", "rainy": "🌧️", "cloudy": "☁️", "hot": "🌡️", "cold": "❄️"}
-                    for i, (condition, score) in enumerate(weather_data.items()):
-                        with weather_cols[i]:
-                            icon = weather_icons.get(condition, "🌤️")
-                            st.metric(f"{icon} {condition.title()}", f"{score}/5")
+                    
+                    # Create a simple table without columns
+                    for condition, score in weather_data.items():
+                        icon = weather_icons.get(condition, "🌤️")
+                        st.write(f"{icon} **{condition.title()}:** {score}/5")
 
             # AI-powered place analysis
             if st.button("🤖 AI Analysis", key=f"ai_analysis_{st.session_state.gallery_index}"):
@@ -2134,55 +2149,8 @@ def send_booking_email(booking_data):
     st.info("📧 Booking details prepared for email to secretary@tshwanetourism.com")
 
 def display_ai_weather_suggestions():
-    """AI-powered weather-based suggestions with enhanced features"""
-    weather_options = ["Sunny", "Rainy", "Cloudy", "Hot", "Cold", "Windy", "Mild"]
-
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        selected_weather = st.selectbox("Current Weather Condition", weather_options)
-
-    with col2:
-        auto_detect = st.button("🌡️ Auto-Detect", help="Automatically detect weather (simulated)")
-        if auto_detect:
-            import random
-            selected_weather = random.choice(weather_options)
-            SessionManager.add_notification(f"Weather auto-detected: {selected_weather}", "info")
-
-    if st.button("🤖 Get AI Recommendations"):
-        if st.session_state.places_data:
-            # Process with real-time system
-            task_id = st.session_state.real_time_processor.add_task(
-                str(uuid.uuid4())[:8],
-                'generate_recommendations',
-                {'weather': selected_weather, 'places': st.session_state.places_data}
-            )
-
-            with st.spinner("AI is analyzing weather conditions..."):
-                result = st.session_state.real_time_processor.process_task(task_id)
-
-                suggestions = get_enhanced_weather_suggestions(selected_weather, st.session_state.places_data)
-
-                if suggestions:
-                    st.write(f"**🎯 AI Recommendations for {selected_weather.lower()} weather:**")
-
-                    # Enhanced display with scoring
-                    for suggestion in suggestions:
-                        with st.expander(f"🏛️ {suggestion['name']} (Score: {suggestion.get('weather_suitability_score', 0)})"):
-                            st.write(f"**Type:** {suggestion.get('type', 'Unknown')}")
-                            st.write(f"**Why recommended:** {suggestion.get('reason', 'Good match for current weather')}")
-                            st.write(f"**Weather suitability:** {suggestion.get('weather_suitability_score', 0)}/5")
-
-                            if st.button(f"📋 Quick Book", key=f"quick_book_{suggestion['name']}"):
-                                st.session_state.selected_place = suggestion
-                                SessionManager.add_notification(f"Quick-selected {suggestion['name']}", "success")
-                else:
-                    st.info("No specific suggestions available for this weather condition.")
-        else:
-            st.info("Please load website data first.")
-
-    # Weather insights
-    if selected_weather:
-        display_weather_insights(selected_weather)
+    """Compatibility wrapper for display_weather_content"""
+    display_weather_content()
 
 def get_enhanced_weather_suggestions(weather_condition: str, places_data: List[Dict]) -> List[Dict]:
     """Enhanced weather suggestions with AI scoring"""
@@ -2470,3 +2438,10 @@ def send_enhanced_booking_email(booking_data: Dict[str, Any]):
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+
