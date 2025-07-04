@@ -1745,9 +1745,19 @@ def display_main_content():
             st.error(f"Website loading failed: {e}")
             st.info("Please check your internet connection and try again.")
 
-        # Enhanced interactive gallery
-        st.subheader("🏛️ Places to Visit")
-        display_enhanced_gallery()
+        # Enhanced interactive gallery with dashboard view option
+        gallery_col1, gallery_col2 = st.columns([3, 1])
+        with gallery_col1:
+            st.subheader("🏛️ Places to Visit")
+        with gallery_col2:
+            view_mode = st.selectbox("View Mode", ["Gallery", "Dashboard", "Table"], key="gallery_view_mode")
+
+        if view_mode == "Dashboard":
+            display_places_dashboard()
+        elif view_mode == "Table":
+            display_places_table()
+        else:
+            display_enhanced_gallery()
 
         # Enhanced booking form
         st.subheader("📝 Book Your Experience")
@@ -1786,14 +1796,14 @@ def display_weather_content():
                 suggestions = get_enhanced_weather_suggestions(selected_weather, st.session_state.places_data)
 
                 if suggestions:
-                    st.write(f"**🎯 AI Recommendations for {selected_weather.lower()} weather:**")
+                    st.markdown(f"**🎯 AI Recommendations for {selected_weather.lower()} weather:**")
 
                     # Display recommendations without nested columns
                     for suggestion in suggestions:
                         with st.expander(f"🏛️ {suggestion['name']} (Score: {suggestion.get('weather_suitability_score', 0)})"):
-                            st.write(f"**Type:** {suggestion.get('type', 'Unknown')}")
-                            st.write(f"**Why recommended:** {suggestion.get('reason', 'Good match for current weather')}")
-                            st.write(f"**Weather suitability:** {suggestion.get('weather_suitability_score', 0)}/5")
+                            st.markdown(f"**Type:** {suggestion.get('type', 'Unknown')}")
+                            st.markdown(f"**Why recommended:** {suggestion.get('reason', 'Good match for current weather')}")
+                            st.markdown(f"**Weather suitability:** {suggestion.get('weather_suitability_score', 0)}/5")
 
                             if st.button(f"📋 Quick Book", key=f"quick_book_{suggestion['name']}"):
                                 st.session_state.selected_place = suggestion
@@ -1988,66 +1998,144 @@ def display_enhanced_gallery():
         # Sentiment emoji
         sentiment_emoji = {"positive": "😊", "neutral": "😐", "negative": "😞"}.get(sentiment, "😐")
 
-        st.markdown(f"""
-        <div class="gallery-card fade-in-up">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="margin: 0; color: var(--primary-green);">🏛️ {display_name}</h3>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <span style="font-size: 1.2rem;">{sentiment_emoji}</span>
-                    <span style="color: var(--text-muted); font-size: 0.9rem;">{sentiment.title()}</span>
-                    {"<span style='color: var(--primary-green);'>✅</span>" if verified else "<span style='color: orange;'>⚠️</span>"}
-                </div>
-            </div>
+        # Create a dashboard-style display using Streamlit components
+        # Header with place name and status
+        col_header1, col_header2, col_header3 = st.columns([3, 1, 1])
+        with col_header1:
+            st.subheader(f"🏛️ {display_name}")
+        with col_header2:
+            st.metric("Sentiment", sentiment.title(), delta=None)
+        with col_header3:
+            verification_status = "✅ Verified" if verified else "⚠️ Sample"
+            st.metric("Status", verification_status, delta=None)
 
-            <p style="color: var(--text-secondary); margin-bottom: 12px;">
-                <strong>Type:</strong> {place_type} |
-                <strong>Categories:</strong> {', '.join(categories) if categories else 'General'}
-            </p>
+        # Place information dashboard
+        info_col1, info_col2 = st.columns([1, 1])
+        with info_col1:
+            st.metric("Type", place_type, delta=None)
+        with info_col2:
+            categories_text = ', '.join(categories) if categories else 'General'
+            st.metric("Categories", categories_text, delta=None)
 
-            <div style="background: var(--secondary-bg); padding: 12px; border-radius: 8px; margin: 12px 0;">
-                <p style="margin: 0; line-height: 1.6; color: var(--text-primary);">
-                    <strong>Overview:</strong> {short_desc}
-                </p>
-            </div>
+        # Overview section
+        st.markdown("### 📖 Overview")
+        st.info(short_desc)
 
-            <div style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px;">
-                <span class="badge">📍 Tshwane</span>
-                <span class="badge">🌐 {data_source}</span>
-                {f'<span class="badge">✅ Verified</span>' if verified else '<span class="badge">⚠️ Sample</span>'}
-                {f'<span class="badge">🌤️ Weather Data</span>' if weather_data else ''}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # Data source and location info
+        badge_col1, badge_col2, badge_col3, badge_col4 = st.columns([1, 1, 1, 1])
+        with badge_col1:
+            st.success("📍 Tshwane")
+        with badge_col2:
+            st.info(f"🌐 {data_source}")
+        with badge_col3:
+            if verified:
+                st.success("✅ Verified")
+            else:
+                st.warning("⚠️ Sample")
+        with badge_col4:
+            if weather_data:
+                st.success("🌤️ Weather Data")
+            else:
+                st.error("❌ No Weather Data")
+
+        # Comprehensive place details dataframe
+        st.markdown("### 📊 Place Details Dashboard")
+        place_details_data = {
+            "Attribute": ["Name", "Type", "Categories", "Sentiment", "Data Source", "Verified", "Weather Data Available"],
+            "Value": [
+                display_name,
+                place_type,
+                ', '.join(categories) if categories else 'General',
+                f"{sentiment_emoji} {sentiment.title()}",
+                data_source,
+                "✅ Yes" if verified else "⚠️ No",
+                "✅ Yes" if weather_data else "❌ No"
+            ]
+        }
+
+        import pandas as pd
+        details_df = pd.DataFrame(place_details_data)
+        st.dataframe(details_df, use_container_width=True, hide_index=True)
+
+        # Place navigation and detailed information
+        st.markdown("---")
+        nav_col1, nav_col2, nav_col3 = st.columns([1, 2, 1])
+        with nav_col2:
+            st.metric("Navigation", f"Place {st.session_state.gallery_index + 1} of {len(st.session_state.places_data)}", delta=None)
 
         # Additional place information with real data
         col1, col2 = st.columns([2, 1])
         with col1:
-            st.write(f"**Place {st.session_state.gallery_index + 1} of {len(st.session_state.places_data)}**")
 
             # Show full description in expandable section
             with st.expander("📖 Full Description"):
-                st.write(full_desc)
+                st.markdown(full_desc)
                 if source_url:
                     st.markdown(f"**Source:** [{source_url}]({source_url})")
 
-            # Weather suitability display - FIX: Remove nested columns
+            # Weather suitability display using dataframe
             if weather_data:
-                with st.expander("🌤️ Weather Suitability"):
-                    # Instead of columns, use a simple table or list
-                    st.write("**Weather Suitability Ratings:**")
-                    weather_icons = {"sunny": "☀️", "rainy": "🌧️", "cloudy": "☁️", "hot": "🌡️", "cold": "❄️"}
-                    
-                    # Create a simple table without columns
+                with st.expander("🌤️ Weather Suitability Dashboard"):
+                    st.markdown("**Weather Suitability Ratings:**")
+
+                    # Create weather dataframe
+                    weather_icons = {"sunny": "☀️", "rainy": "🌧️", "cloudy": "☁️", "hot": "🌡️", "cold": "❄️", "windy": "💨", "mild": "🌤️"}
+
+                    weather_df_data = []
                     for condition, score in weather_data.items():
                         icon = weather_icons.get(condition, "🌤️")
-                        st.write(f"{icon} **{condition.title()}:** {score}/5")
+                        stars = "⭐" * int(score) + "☆" * (5 - int(score))
+                        weather_df_data.append({
+                            "Weather": f"{icon} {condition.title()}",
+                            "Rating": f"{stars}",
+                            "Score": f"{score}/5"
+                        })
+
+                    if weather_df_data:
+                        import pandas as pd
+                        weather_df = pd.DataFrame(weather_df_data)
+                        st.dataframe(weather_df, use_container_width=True, hide_index=True)
+
+                        # Add weather chart
+                        import plotly.express as px
+                        chart_data = pd.DataFrame({
+                            'Condition': [item['Weather'].split(' ', 1)[1] for item in weather_df_data],
+                            'Score': [int(item['Score'].split('/')[0]) for item in weather_df_data]
+                        })
+                        fig = px.bar(chart_data, x='Condition', y='Score',
+                                   title="Weather Suitability Scores",
+                                   color='Score', color_continuous_scale='Viridis')
+                        st.plotly_chart(fig, use_container_width=True)
 
             # AI-powered place analysis
             if st.button("🤖 AI Analysis", key=f"ai_analysis_{st.session_state.gallery_index}"):
                 with st.spinner("Analyzing place with AI..."):
                     analysis = analyze_place_with_ai(current_place)
-                    st.write("**AI Analysis:**")
-                    st.write(analysis)
+                    st.markdown("**🤖 AI Analysis Dashboard:**")
+
+                    # Parse analysis into structured format
+                    analysis_lines = analysis.split('\n')
+                    analysis_data = []
+                    for line in analysis_lines:
+                        if line.strip().startswith('•'):
+                            clean_line = line.strip()[1:].strip()  # Remove bullet point
+                            if clean_line:
+                                # Extract emoji and text
+                                parts = clean_line.split(' ', 1)
+                                if len(parts) >= 2:
+                                    emoji = parts[0]
+                                    text = parts[1]
+                                    analysis_data.append({
+                                        "Category": emoji,
+                                        "Analysis": text
+                                    })
+
+                    if analysis_data:
+                        import pandas as pd
+                        analysis_df = pd.DataFrame(analysis_data)
+                        st.dataframe(analysis_df, use_container_width=True, hide_index=True)
+                    else:
+                        st.info(analysis)
 
         with col2:
             book_name = display_name[:20] + "..." if len(display_name) > 20 else display_name
@@ -2062,11 +2150,133 @@ def display_enhanced_gallery():
                     search_term = categories[0]
                     results = st.session_state.semantic_search.search_tourism_content(search_term)
                     if results:
-                        st.write(f"**Similar places ({search_term}):**")
+                        st.markdown(f"**🔍 Similar places ({search_term}):**")
+
+                        # Create dataframe for similar places
+                        similar_data = []
                         for result in results[:3]:
-                            st.write(f"• {result.get('display_name', result.get('name', 'Unknown'))}")
+                            place_name = result.get('display_name', result.get('name', 'Unknown'))
+                            score = result.get('relevance_score', 0)
+                            place_type = result.get('type', 'Unknown')
+                            similar_data.append({
+                                "🏛️ Place": place_name,
+                                "📊 Relevance Score": score,
+                                "🏷️ Type": place_type.title()
+                            })
+
+                        if similar_data:
+                            import pandas as pd
+                            similar_df = pd.DataFrame(similar_data)
+                            st.dataframe(similar_df, use_container_width=True, hide_index=True)
                 else:
                     st.info("No categories available for similarity search")
+
+def display_places_dashboard():
+    """Display all places in a comprehensive dashboard format"""
+    if not st.session_state.places_data:
+        st.warning("🌐 No tourism data loaded from tshwane_places.csv!")
+        return
+
+    st.markdown("### 📊 Places Dashboard Overview")
+
+    # Summary metrics
+    total_places = len(st.session_state.places_data)
+    verified_places = sum(1 for place in st.session_state.places_data if place.get('verified_source', False))
+    place_types = len(set(place.get('type', 'unknown') for place in st.session_state.places_data))
+
+    metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+    with metric_col1:
+        st.metric("Total Places", total_places)
+    with metric_col2:
+        st.metric("Verified Places", verified_places)
+    with metric_col3:
+        st.metric("Place Types", place_types)
+    with metric_col4:
+        places_with_weather = sum(1 for place in st.session_state.places_data if place.get('weather_suitability'))
+        st.metric("Weather Data", places_with_weather)
+
+    # Places by type chart
+    import pandas as pd
+    import plotly.express as px
+
+    type_counts = {}
+    for place in st.session_state.places_data:
+        place_type = place.get('type', 'unknown').title()
+        type_counts[place_type] = type_counts.get(place_type, 0) + 1
+
+    if type_counts:
+        chart_col1, chart_col2 = st.columns(2)
+        with chart_col1:
+            fig_pie = px.pie(values=list(type_counts.values()), names=list(type_counts.keys()),
+                           title="Places by Type Distribution")
+            st.plotly_chart(fig_pie, use_container_width=True)
+
+        with chart_col2:
+            fig_bar = px.bar(x=list(type_counts.keys()), y=list(type_counts.values()),
+                           title="Places Count by Type")
+            st.plotly_chart(fig_bar, use_container_width=True)
+
+def display_places_table():
+    """Display all places in a comprehensive table format"""
+    if not st.session_state.places_data:
+        st.warning("🌐 No tourism data loaded from tshwane_places.csv!")
+        return
+
+    st.markdown("### 📋 Places Data Table")
+
+    # Create comprehensive dataframe
+    import pandas as pd
+
+    table_data = []
+    for i, place in enumerate(st.session_state.places_data):
+        sentiment_emoji = {"positive": "😊", "neutral": "😐", "negative": "😞"}.get(place.get('ai_sentiment', 'neutral'), "😐")
+
+        table_data.append({
+            "#": i + 1,
+            "🏛️ Name": place.get('display_name', place.get('name', 'Unknown')),
+            "🏷️ Type": place.get('type', 'unknown').title(),
+            "📝 Description": place.get('description', 'No description')[:100] + "..." if len(place.get('description', '')) > 100 else place.get('description', 'No description'),
+            "😊 Sentiment": f"{sentiment_emoji} {place.get('ai_sentiment', 'neutral').title()}",
+            "✅ Verified": "✅ Yes" if place.get('verified_source', False) else "⚠️ No",
+            "🌤️ Weather": "✅ Yes" if place.get('weather_suitability') else "❌ No",
+            "🌐 Source": place.get('data_source', 'Unknown')
+        })
+
+    if table_data:
+        places_df = pd.DataFrame(table_data)
+
+        # Add filters
+        filter_col1, filter_col2, filter_col3 = st.columns(3)
+        with filter_col1:
+            type_filter = st.multiselect("Filter by Type",
+                                       options=places_df["🏷️ Type"].unique(),
+                                       default=places_df["🏷️ Type"].unique())
+        with filter_col2:
+            verified_filter = st.selectbox("Filter by Verification",
+                                         options=["All", "✅ Yes", "⚠️ No"],
+                                         index=0)
+        with filter_col3:
+            weather_filter = st.selectbox("Filter by Weather Data",
+                                        options=["All", "✅ Yes", "❌ No"],
+                                        index=0)
+
+        # Apply filters
+        filtered_df = places_df[places_df["🏷️ Type"].isin(type_filter)]
+        if verified_filter != "All":
+            filtered_df = filtered_df[filtered_df["✅ Verified"] == verified_filter]
+        if weather_filter != "All":
+            filtered_df = filtered_df[filtered_df["🌤️ Weather"] == weather_filter]
+
+        st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+
+        # Download option
+        csv = filtered_df.to_csv(index=False)
+        st.download_button(
+            label="📥 Download Filtered Data as CSV",
+            data=csv,
+            file_name="tshwane_places_filtered.csv",
+            mime="text/csv"
+        )
 
 def analyze_place_with_ai(place: Dict[str, Any]) -> str:
     """AI-powered place analysis using local models"""
@@ -2113,7 +2323,7 @@ def display_enhanced_booking_form():
 
     # Real-time form validation indicator
     st.markdown("### 🎯 Smart Booking System")
-    st.write(f"**Booking for:** {st.session_state.selected_place['name']}")
+    st.markdown(f"**Booking for:** {st.session_state.selected_place['name']}")
 
     with st.form("enhanced_booking_form", clear_on_submit=False):
         # Enhanced form fields with validation
@@ -2461,14 +2671,14 @@ def display_weather_insights(weather_condition: str):
 
         col1, col2 = st.columns(2)
         with col1:
-            st.write("**💡 Tips:**")
+            st.markdown("**💡 Tips:**")
             for tip in insight['tips']:
-                st.write(f"• {tip}")
+                st.markdown(f"• {tip}")
 
         with col2:
-            st.write("**🎯 Recommended Activities:**")
+            st.markdown("**🎯 Recommended Activities:**")
             for activity in insight['activities']:
-                st.write(f"• {activity}")
+                st.markdown(f"• {activity}")
 
 def display_real_time_notifications():
     """Real-time notification system (Lovable-inspired)"""
