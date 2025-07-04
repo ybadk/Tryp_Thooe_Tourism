@@ -1467,62 +1467,57 @@ def load_real_tourism_data():
         contacts_file = Path("processed_data/tshwane_contacts.json")
         social_file = Path("processed_data/tshwane_social_links.json")
 
-            # Load contact info
-            contact_info = {}
-            if contacts_file.exists():
-                with open(contacts_file, 'r', encoding='utf-8') as f:
-                    contact_info = json.load(f)
+        # Load contact info
+        contact_info = {}
+        if contacts_file.exists():
+            with open(contacts_file, 'r', encoding='utf-8') as f:
+                contact_info = json.load(f)
 
-            # Load social links
-            social_links = []
-            if social_file.exists():
-                with open(social_file, 'r', encoding='utf-8') as f:
-                    social_links = json.load(f)
+        # Load social links
+        social_links = []
+        if social_file.exists():
+            with open(social_file, 'r', encoding='utf-8') as f:
+                social_links = json.load(f)
 
-            # Apply AI enhancements to places
-            enhanced_places = []
-            for place in places:
-                # Add display name for consistency
-                if 'display_name' not in place:
-                    place['display_name'] = place.get('name', 'Unknown Place')
+        # Apply AI enhancements to places
+        enhanced_places = []
+        for place in places:
+            # Add display name for consistency
+            if 'display_name' not in place:
+                place['display_name'] = place.get('name', 'Unknown Place')
 
-                # Add short description
-                if 'short_description' not in place and 'description' in place:
-                    desc = place['description']
-                    place['short_description'] = desc[:100] + "..." if len(desc) > 100 else desc
+            # Add short description
+            if 'short_description' not in place and 'description' in place:
+                desc = place['description']
+                place['short_description'] = desc[:100] + "..." if len(desc) > 100 else desc
 
-                enhanced_places.append(place)
+            enhanced_places.append(place)
 
-            # Update session state with data
-            st.session_state.places_data = enhanced_places
-            st.session_state.restaurants_data = restaurants
-            st.session_state.contact_info = contact_info
-            st.session_state.social_links = social_links
+        # Update session state with data
+        st.session_state.places_data = enhanced_places
+        st.session_state.restaurants_data = restaurants
+        st.session_state.contact_info = contact_info
+        st.session_state.social_links = social_links
 
-            # Set data source based on what was loaded
-            if csv_places_data:
-                st.session_state.data_source = "CSV Data"
-                st.session_state.csv_data_loaded = True
-            else:
-                st.session_state.data_source = "Real Website Data"
-
-            st.session_state.last_updated = datetime.now().isoformat()
-
-            # Update AI tools with data
-            update_ai_tools_with_real_data(enhanced_places, restaurants, contact_info, social_links)
-
-            # Additional notification for CSV data
-            if not csv_places_data:
-                SessionManager.add_notification(
-                    f"✅ Loaded {len(enhanced_places)} places from JSON backup!",
-                    "success"
-                )
-            return True
+        # Set data source based on what was loaded
+        if csv_places_data:
+            st.session_state.data_source = "CSV Data"
+            st.session_state.csv_data_loaded = True
         else:
-            # Load sample data as fallback
-            load_sample_data()
-            SessionManager.add_notification("⚠️ Using sample data - run crawler for real data", "warning")
-            return False
+            st.session_state.data_source = "Real Website Data"
+
+        st.session_state.last_updated = datetime.now().isoformat()
+
+        # Update AI tools with data
+        update_ai_tools_with_real_data(enhanced_places, restaurants, contact_info, social_links)
+
+        # Additional notification for CSV data
+        if not csv_places_data:
+            SessionManager.add_notification(
+                f"✅ Loaded {len(enhanced_places)} places from JSON backup!",
+                "success"
+            )
+        return True
     except Exception as e:
         SessionManager.add_notification(f"❌ Error loading data: {e}", "error")
         load_sample_data()
