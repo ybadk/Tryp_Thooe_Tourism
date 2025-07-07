@@ -31,10 +31,13 @@ import uuid
 warnings.filterwarnings('ignore')
 
 # Enhanced system architecture inspired by analyzed AI tools
+
+
 class OperationMode(Enum):
     PLANNING = "planning"
     STANDARD = "standard"
     REAL_TIME = "real_time"
+
 
 @dataclass
 class PlanStep:
@@ -44,12 +47,14 @@ class PlanStep:
     result: Optional[Any] = None
     error: Optional[str] = None
 
+
 @dataclass
 class ToolCall:
     name: str
     parameters: Dict[str, Any]
     explanation: str
     result: Optional[Any] = None
+
 
 class TshwanePlanningSystem:
     """Devin-inspired planning system for tourism data processing"""
@@ -123,6 +128,7 @@ class TshwanePlanningSystem:
             step.error = str(e)
             return False
 
+
 class ComponentSystem:
     """v0-inspired component system for modular UI"""
 
@@ -173,6 +179,7 @@ class ComponentSystem:
                 st.warning(message)
             else:
                 st.info(message)
+
 
 class SemanticSearch:
     """Cursor-inspired semantic search for tourism content"""
@@ -269,7 +276,8 @@ class SemanticSearch:
                 score += 3
 
             # Weather suitability matching
-            weather_terms = ['sunny', 'rainy', 'cloudy', 'hot', 'cold', 'weather']
+            weather_terms = ['sunny', 'rainy',
+                             'cloudy', 'hot', 'cold', 'weather']
             if any(term in query_lower for term in weather_terms):
                 weather_data = item.get('weather_suitability', {})
                 if weather_data:
@@ -298,6 +306,7 @@ class SemanticSearch:
                     return sentence.strip() + "..."
 
         return item.get('short_description', description[:100] + "...")
+
 
 # Page configuration
 st.set_page_config(
@@ -351,21 +360,19 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Enhanced session state management
+
+
 class SessionManager:
     """Lovable-inspired session state management"""
 
     @staticmethod
     def initialize_session():
         """Initialize all session state variables"""
-        # Load data from CSV first
-        csv_places_data = load_tshwane_places_csv()
-        csv_restaurants_data = [place for place in csv_places_data if place.get('type') == 'restaurant']
-        csv_other_places = [place for place in csv_places_data if place.get('type') != 'restaurant']
-
+        # Remove CSV loading and related variables
         defaults = {
             'website_data': {},
-            'places_data': csv_other_places,  # Load from CSV
-            'restaurants_data': csv_restaurants_data,  # Load restaurants from CSV
+            'places_data': [],
+            'restaurants_data': [],
             'social_links': [],
             'contact_info': {},
             'planning_system': TshwanePlanningSystem(),
@@ -382,9 +389,9 @@ class SessionManager:
                 'auto_refresh': True,
                 'show_progress': True
             },
-            'csv_data_loaded': True,  # Flag to indicate CSV data is loaded
-            'available_place_types': get_place_types_from_csv(),  # Available types from CSV
-            'available_weather_options': get_weather_options_from_csv()  # Weather options from CSV
+            'csv_data_loaded': False,
+            'available_place_types': [],
+            'available_weather_options': []
         }
 
         for key, value in defaults.items():
@@ -396,7 +403,8 @@ class SessionManager:
         """Update execution progress with real-time feedback"""
         st.session_state.execution_progress = progress
         if st.session_state.user_preferences['show_progress']:
-            st.session_state.planning_system.think(f"Completed: {step} ({progress}%)")
+            st.session_state.planning_system.think(
+                f"Completed: {step} ({progress}%)")
 
     @staticmethod
     def add_notification(message: str, type: str = "info"):
@@ -413,6 +421,7 @@ class SessionManager:
         # Keep only last 10 notifications
         if len(st.session_state.notifications) > 10:
             st.session_state.notifications = st.session_state.notifications[-10:]
+
 
 class RealTimeProcessor:
     """Manus-inspired real-time processing system"""
@@ -435,7 +444,8 @@ class RealTimeProcessor:
 
     def process_task(self, task_id: str) -> Dict[str, Any]:
         """Process a specific task with progress updates"""
-        task = next((t for t in self.processing_queue if t['id'] == task_id), None)
+        task = next(
+            (t for t in self.processing_queue if t['id'] == task_id), None)
         if not task:
             return {'error': 'Task not found'}
 
@@ -517,10 +527,13 @@ class RealTimeProcessor:
         task['status'] = 'completed'
         return {'success': True, 'recommendations': []}
 
+
 # Initialize enhanced session management
 SessionManager.initialize_session()
 
 # Asset loading functions
+
+
 def load_website_assets():
     """Load assets from the cloned website"""
     assets = {
@@ -555,51 +568,15 @@ def load_website_assets():
         st.warning(f"Could not load website assets: {e}")
         return assets
 
-def load_tshwane_places_csv():
-    """Load data from tshwane_places.csv file"""
-    try:
-        # Try to load from root directory first
-        csv_file = Path("tshwane_places.csv")
-        if not csv_file.exists():
-            # Try processed_data directory
-            csv_file = Path("processed_data/tshwane_places.csv")
-
-        if csv_file.exists():
-            df = pd.read_csv(csv_file)
-
-            # Convert DataFrame to list of dictionaries
-            places_data = []
-            for _, row in df.iterrows():
-                place = {
-                    'name': row.get('name', 'Unknown'),
-                    'display_name': row.get('name', 'Unknown'),
-                    'description': row.get('description', 'No description available'),
-                    'type': row.get('type', 'attraction'),
-                    'source_url': row.get('source_url', ''),
-                    'ai_sentiment': row.get('ai_sentiment', 'neutral'),
-                    'ai_categories': eval(row.get('ai_categories', '[]')) if isinstance(row.get('ai_categories'), str) and row.get('ai_categories').startswith('[') else [row.get('type', 'attraction')],
-                    'weather_suitability': eval(row.get('weather_suitability', "{'sunny': 3, 'rainy': 3, 'cloudy': 3, 'hot': 3, 'cold': 3}")) if isinstance(row.get('weather_suitability'), str) and row.get('weather_suitability').startswith('{') else {'sunny': 3, 'rainy': 3, 'cloudy': 3, 'hot': 3, 'cold': 3},
-                    'enhanced_at': row.get('enhanced_at', datetime.now().isoformat()),
-                    'verified_source': True,
-                    'data_source': 'tshwane_places.csv'
-                }
-                places_data.append(place)
-
-            return places_data
-        else:
-            st.warning("tshwane_places.csv file not found. Using fallback data.")
-            return []
-    except Exception as e:
-        st.error(f"Error loading tshwane_places.csv: {e}")
-        return []
 
 def get_place_types_from_csv():
     """Get unique place types from CSV for multi-select options"""
+    from pathlib import Path
+    import pandas as pd
     try:
         csv_file = Path("tshwane_places.csv")
         if not csv_file.exists():
             csv_file = Path("processed_data/tshwane_places.csv")
-
         if csv_file.exists():
             df = pd.read_csv(csv_file)
             types = df['type'].unique().tolist()
@@ -609,13 +586,15 @@ def get_place_types_from_csv():
     except Exception as e:
         return ['attraction', 'accommodation', 'restaurant', 'venue', 'area']
 
+
 def get_weather_options_from_csv():
     """Get weather options based on weather_suitability data in CSV"""
+    from pathlib import Path
+    import pandas as pd
     try:
         csv_file = Path("tshwane_places.csv")
         if not csv_file.exists():
             csv_file = Path("processed_data/tshwane_places.csv")
-
         if csv_file.exists():
             df = pd.read_csv(csv_file)
             weather_options = set()
@@ -627,7 +606,6 @@ def get_weather_options_from_csv():
                         weather_options.update(weather_dict.keys())
                     except:
                         pass
-
             if weather_options:
                 return sorted(list(weather_options))
             else:
@@ -636,6 +614,7 @@ def get_weather_options_from_csv():
             return ["sunny", "rainy", "cloudy", "hot", "cold", "windy", "mild"]
     except Exception as e:
         return ["sunny", "rainy", "cloudy", "hot", "cold", "windy", "mild"]
+
 
 def create_tutorial_system():
     """Create an interactive tutorial system"""
@@ -688,6 +667,7 @@ def create_tutorial_system():
 
     return tutorial_steps
 
+
 def display_tutorial():
     """Display the tutorial overlay"""
     if st.session_state.get('show_tutorial', False):
@@ -736,7 +716,8 @@ def display_tutorial():
                                 cursor: pointer;
                                 font-weight: 500;
                             ">
-                                {('Finish' if current_step == len(tutorial_steps) - 1 else 'Next')}
+                                {('Finish' if current_step == len(
+                tutorial_steps) - 1 else 'Next')}
                             </button>
                         </div>
                     </div>
@@ -758,6 +739,7 @@ def display_tutorial():
             </script>
             """, unsafe_allow_html=True)
 
+
 def optimize_loading():
     """Optimize loading speed with caching and lazy loading"""
     # Cache website assets
@@ -770,15 +752,19 @@ def optimize_loading():
         st.session_state.heavy_components_loaded = False
 
 # Encryption functions
+
+
 def generate_key():
     """Generate a key for encryption"""
     return Fernet.generate_key()
+
 
 def encrypt_data(data, key):
     """Encrypt data using Fernet encryption"""
     f = Fernet(key)
     encrypted_data = f.encrypt(data.encode())
     return encrypted_data
+
 
 def decrypt_data(encrypted_data, key):
     """Decrypt data using Fernet encryption"""
@@ -787,6 +773,8 @@ def decrypt_data(encrypted_data, key):
     return decrypted_data.decode()
 
 # Website scraping functions
+
+
 @st.cache_data
 def scrape_website(url):
     """Scrape the Tshwane Tourism website"""
@@ -796,9 +784,9 @@ def scrape_website(url):
         }
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
-        
+
         soup = BeautifulSoup(response.content, 'html.parser')
-        
+
         # Extract data
         data = {
             'title': soup.find('title').text if soup.find('title') else '',
@@ -810,11 +798,12 @@ def scrape_website(url):
             'places': extract_places(soup),
             'restaurants': extract_restaurants(soup)
         }
-        
+
         return data
     except Exception as e:
         st.error(f"Error scraping website: {e}")
         return None
+
 
 def extract_social_links(soup):
     """Extract social media links from the website"""
@@ -826,7 +815,7 @@ def extract_social_links(soup):
         r'youtube\.com',
         r'tiktok\.com'
     ]
-    
+
     social_links = []
     for link in soup.find_all('a', href=True):
         href = link.get('href')
@@ -837,36 +826,40 @@ def extract_social_links(soup):
                     'url': href,
                     'text': link.get_text(strip=True)
                 })
-    
+
     return social_links
+
 
 def extract_contact_info(soup):
     """Extract contact information from the website"""
     contact_info = {}
-    
+
     # Email pattern
     email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
     emails = re.findall(email_pattern, soup.get_text())
     contact_info['emails'] = list(set(emails))
-    
+
     # Phone pattern
     phone_pattern = r'(\+27|0)[0-9\s\-\(\)]{8,15}'
     phones = re.findall(phone_pattern, soup.get_text())
     contact_info['phones'] = list(set(phones))
-    
+
     # Address pattern (basic)
-    address_elements = soup.find_all(text=re.compile(r'address|location|street|avenue|road', re.IGNORECASE))
+    address_elements = soup.find_all(text=re.compile(
+        r'address|location|street|avenue|road', re.IGNORECASE))
     contact_info['addresses'] = [elem.strip() for elem in address_elements[:5]]
-    
+
     return contact_info
+
 
 def extract_places(soup):
     """Extract places/attractions from the website"""
     places = []
-    
+
     # Look for common place indicators
-    place_keywords = ['attraction', 'museum', 'park', 'monument', 'gallery', 'center', 'square', 'garden']
-    
+    place_keywords = ['attraction', 'museum', 'park',
+                      'monument', 'gallery', 'center', 'square', 'garden']
+
     for element in soup.find_all(['h1', 'h2', 'h3', 'h4', 'div', 'p']):
         text = element.get_text(strip=True)
         if any(keyword in text.lower() for keyword in place_keywords) and len(text) < 100:
@@ -875,16 +868,18 @@ def extract_places(soup):
                 'description': text,
                 'type': 'attraction'
             })
-    
+
     return places[:20]  # Limit to 20 places
+
 
 def extract_restaurants(soup):
     """Extract restaurants from the website"""
     restaurants = []
-    
+
     # Look for restaurant indicators
-    restaurant_keywords = ['restaurant', 'cafe', 'dining', 'food', 'cuisine', 'bar', 'grill']
-    
+    restaurant_keywords = ['restaurant', 'cafe',
+                           'dining', 'food', 'cuisine', 'bar', 'grill']
+
     for element in soup.find_all(['h1', 'h2', 'h3', 'h4', 'div', 'p']):
         text = element.get_text(strip=True)
         if any(keyword in text.lower() for keyword in restaurant_keywords) and len(text) < 100:
@@ -893,20 +888,24 @@ def extract_restaurants(soup):
                 'description': text,
                 'type': 'restaurant'
             })
-    
+
     return restaurants[:15]  # Limit to 15 restaurants
 
 # Weather-based suggestions using Hugging Face
+
+
 @st.cache_resource
 def load_weather_model():
     """Load Hugging Face model for weather-based suggestions"""
     try:
         # Using a simple text classification model
-        classifier = pipeline("text-classification", model="cardiffnlp/twitter-roberta-base-sentiment-latest")
+        classifier = pipeline(
+            "text-classification", model="cardiffnlp/twitter-roberta-base-sentiment-latest")
         return classifier
     except Exception as e:
         st.warning(f"Could not load weather model: {e}")
         return None
+
 
 def get_weather_suggestions(weather_condition, places_data):
     """Get place suggestions based on weather"""
@@ -917,17 +916,19 @@ def get_weather_suggestions(weather_condition, places_data):
         'hot': ['water', 'shade', 'indoor', 'air-conditioned', 'cool'],
         'cold': ['indoor', 'warm', 'cozy', 'heated', 'shelter']
     }
-    
+
     suggestions = []
     keywords = weather_mapping.get(weather_condition.lower(), [])
-    
+
     for place in places_data:
         if any(keyword in place['description'].lower() for keyword in keywords):
             suggestions.append(place)
-    
+
     return suggestions[:5]  # Return top 5 suggestions
 
 # Enhanced main application with AI tool integrations
+
+
 def main():
     """Main application with enhanced AI capabilities"""
 
@@ -1254,20 +1255,23 @@ def main():
     col1, col2, col3 = st.columns([3, 1, 1])
     with col1:
         st.title("🌿 Tshwane Tourism Interactive Portal")
-        st.markdown("*Discover the beauty of Tshwane with our AI-powered tourism assistant*")
+        st.markdown(
+            "*Discover the beauty of Tshwane with our AI-powered tourism assistant*")
 
     with col2:
         # Mode selector (Devin-inspired)
         mode = st.selectbox(
             "Operation Mode",
-            [OperationMode.PLANNING.value, OperationMode.STANDARD.value, OperationMode.REAL_TIME.value],
+            [OperationMode.PLANNING.value, OperationMode.STANDARD.value,
+                OperationMode.REAL_TIME.value],
             index=0
         )
         st.session_state.operation_mode = OperationMode(mode)
 
     with col3:
         # Real-time refresh toggle (Lovable-inspired)
-        auto_refresh = st.toggle("🔄 Auto Refresh", value=st.session_state.user_preferences['auto_refresh'])
+        auto_refresh = st.toggle(
+            "🔄 Auto Refresh", value=st.session_state.user_preferences['auto_refresh'])
         st.session_state.user_preferences['auto_refresh'] = auto_refresh
 
         if auto_refresh:
@@ -1294,6 +1298,7 @@ def main():
     # Real-time notifications (Lovable-inspired)
     display_real_time_notifications()
 
+
 def display_planning_interface():
     """Devin-inspired planning interface"""
     st.subheader("🎯 Planning Mode")
@@ -1318,27 +1323,32 @@ def display_planning_interface():
                 with col2:
                     if st.button(f"▶️ Execute", key=f"exec_{step.id}"):
                         with st.spinner(f"Executing {step.description}..."):
-                            success = st.session_state.planning_system.execute_step(step.id)
+                            success = st.session_state.planning_system.execute_step(
+                                step.id)
                             if success:
-                                SessionManager.add_notification(f"Step completed: {step.description}", "success")
+                                SessionManager.add_notification(
+                                    f"Step completed: {step.description}", "success")
                             else:
-                                SessionManager.add_notification(f"Step failed: {step.description}", "error")
+                                SessionManager.add_notification(
+                                    f"Step failed: {step.description}", "error")
                         st.rerun()
 
     # Display current plan status
     if st.session_state.current_plan:
         st.subheader("📊 Current Plan Status")
-        completed = sum(1 for step in st.session_state.current_plan if step.status == "completed")
+        completed = sum(
+            1 for step in st.session_state.current_plan if step.status == "completed")
         total = len(st.session_state.current_plan)
         progress = (completed / total) * 100 if total > 0 else 0
 
         st.progress(progress / 100)
-        st.caption(f"Progress: {completed}/{total} steps completed ({progress:.1f}%)")
+        st.caption(
+            f"Progress: {completed}/{total} steps completed ({progress:.1f}%)")
+
 
 def display_enhanced_sidebar():
     """Enhanced sidebar with AI tool integrations and dark theme"""
     with st.sidebar:
-        # Tutorial button
         st.markdown("""
         <div class="sidebar-content">
             <div style="text-align: center; margin-bottom: 20px;">
@@ -1354,50 +1364,34 @@ def display_enhanced_sidebar():
             st.session_state.tutorial_step = 0
             st.rerun()
 
-        # Quick actions with styled buttons
         st.markdown("### 🚀 Quick Actions")
-
-        # Load real data button
         col1, col2 = st.columns([1, 1])
         with col1:
-            if st.button("🌐 Load Data", key="load_data_btn", help="Load real tourism data"):
-                optimize_loading()
-                load_real_tourism_data()
-
+            if st.button("🌐 Load Data", key="load_data_btn", help="Load tourism data"):
+                st.session_state['places_data'] = load_tshwane_places_csv()
+                st.success("Tourism data loaded from tshwane_places.csv!")
         with col2:
             if st.button("🔄 Refresh", key="refresh_btn", help="Refresh the application"):
                 st.rerun()
 
-        # Semantic search with enhanced styling
         st.markdown("### 🔍 Smart Search")
         search_query = st.text_input(
             "Search tourism content:",
             placeholder="outdoor activities, museums, restaurants...",
             key="search_input"
         )
-
         if st.button("🔍 Search", key="search_btn") and search_query:
-            with st.spinner("🤖 AI is searching..."):
-                results = st.session_state.semantic_search.search_tourism_content(
-                    search_query,
-                    st.session_state.places_data + st.session_state.restaurants_data
-                )
+            results = [place for place in st.session_state['places_data'] if search_query.lower() in place.get(
+                'name', '').lower() or search_query.lower() in place.get('description', '').lower()]
+            if results:
+                st.success(f"Found {len(results)} results:")
+                for result in results[:5]:
+                    st.markdown(
+                        f"**{result.get('name', 'Unknown')}**<br><small>{result.get('type', '')}</small>", unsafe_allow_html=True)
+            else:
+                st.info("No results found. Try different keywords.")
 
-                if results:
-                    st.success(f"Found {len(results)} results:")
-                    for result in results[:5]:
-                        st.markdown(f"""
-                        <div class="sidebar-button" style="margin: 4px 0; padding: 8px 12px;">
-                            <strong>{result.get('name', 'Unknown')[:30]}...</strong><br>
-                            <small>Score: {result.get('relevance_score', 0)}</small>
-                        </div>
-                        """, unsafe_allow_html=True)
-                else:
-                    st.info("No results found. Try different keywords.")
-
-        # Navigation links with icons
         st.markdown("### 🧭 Navigation")
-
         nav_links = [
             ("🏛️ Places Gallery", "gallery"),
             ("📝 Booking Form", "booking"),
@@ -1405,250 +1399,31 @@ def display_enhanced_sidebar():
             ("📊 Analytics", "analytics"),
             ("📞 Contact Info", "contact")
         ]
-
         for icon_text, key in nav_links:
             if st.button(icon_text, key=f"nav_{key}", help=f"Go to {icon_text}"):
                 st.session_state.current_section = key
-                SessionManager.add_notification(f"Navigated to {icon_text}", "info")
+                st.success(f"Navigated to {icon_text}")
 
-        # Real-time status with CSV data info
         st.markdown("### 📊 System Status")
+        st.metric("Places", len(st.session_state['places_data']), delta=None)
+        st.metric("Notifications", len(
+            st.session_state.get('notifications', [])), delta=None)
 
-        # Status indicators
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Places", len(st.session_state.places_data), delta=None)
-        with col2:
-            st.metric("Restaurants", len(st.session_state.restaurants_data), delta=None)
 
-        # CSV data status
-        if st.session_state.get('csv_data_loaded', False):
-            st.success("✅ CSV Data Loaded")
-            csv_types = st.session_state.get('available_place_types', [])
-            st.caption(f"Types: {', '.join(csv_types[:3])}{'...' if len(csv_types) > 3 else ''}")
-        else:
-            st.warning("⚠️ CSV Data Not Loaded")
-
-        st.metric("Notifications", len(st.session_state.notifications), delta=None)
-
-        # Display social links and contact info with enhanced styling
-        display_enhanced_sidebar_content()
-
-def load_real_tourism_data():
-    """Load tourism data prioritizing CSV files with enhanced AI integration"""
+def load_tshwane_places_csv():
+    """Load tshwane_places.csv and return a list of dicts."""
+    import pandas as pd
     try:
-        # First try to load from CSV (priority)
-        csv_places_data = load_tshwane_places_csv()
+        df = pd.read_csv('tshwane_places.csv')
+        return df.to_dict(orient='records')
+    except Exception:
+        return []
 
-        if csv_places_data:
-            # Use CSV data as primary source
-            places = [place for place in csv_places_data if place.get('type') != 'restaurant']
-            restaurants = [place for place in csv_places_data if place.get('type') == 'restaurant']
 
-            SessionManager.add_notification(
-                f"✅ Loaded {len(csv_places_data)} places from tshwane_places.csv!",
-                "success"
-            )
-        else:
-            # Fallback to JSON data
-            data_file = Path("processed_data/enhanced_tshwane_data.json")
-            if data_file.exists():
-                with open(data_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
+# At startup, ensure places_data is loaded
+if 'places_data' not in st.session_state or not st.session_state['places_data']:
+    st.session_state['places_data'] = load_tshwane_places_csv()
 
-                # Process and enhance the real data
-                places = data.get('places', [])
-                restaurants = data.get('restaurants', [])
-            else:
-                places = []
-                restaurants = []
-
-        # Load additional data files
-        contacts_file = Path("processed_data/tshwane_contacts.json")
-        social_file = Path("processed_data/tshwane_social_links.json")
-
-        # Load contact info
-        contact_info = {}
-        if contacts_file.exists():
-            with open(contacts_file, 'r', encoding='utf-8') as f:
-                contact_info = json.load(f)
-
-        # Load social links
-        social_links = []
-        if social_file.exists():
-            with open(social_file, 'r', encoding='utf-8') as f:
-                social_links = json.load(f)
-
-        # Apply AI enhancements to places
-        enhanced_places = []
-        for place in places:
-            # Add display name for consistency
-            if 'display_name' not in place:
-                place['display_name'] = place.get('name', 'Unknown Place')
-
-            # Add short description
-            if 'short_description' not in place and 'description' in place:
-                desc = place['description']
-                place['short_description'] = desc[:100] + "..." if len(desc) > 100 else desc
-
-            enhanced_places.append(place)
-
-        # Update session state with data
-        st.session_state.places_data = enhanced_places
-        st.session_state.restaurants_data = restaurants
-        st.session_state.contact_info = contact_info
-        st.session_state.social_links = social_links
-
-        # Set data source based on what was loaded
-        if csv_places_data:
-            st.session_state.data_source = "CSV Data"
-            st.session_state.csv_data_loaded = True
-        else:
-            st.session_state.data_source = "Real Website Data"
-
-        st.session_state.last_updated = datetime.now().isoformat()
-
-        # Update AI tools with data
-        update_ai_tools_with_real_data(enhanced_places, restaurants, contact_info, social_links)
-
-        # Additional notification for CSV data
-        if not csv_places_data:
-            SessionManager.add_notification(
-                f"✅ Loaded {len(enhanced_places)} places from JSON backup!",
-                "success"
-            )
-        return True
-    except Exception as e:
-        SessionManager.add_notification(f"❌ Error loading data: {e}", "error")
-        load_sample_data()
-        return False
-
-def update_ai_tools_with_real_data(places, restaurants, contact_info, social_links):
-    """Update AI tools to work with real website data"""
-    try:
-        # Update semantic search with real content
-        all_content = []
-
-        for place in places:
-            content_item = {
-                'id': f"place_{places.index(place)}",
-                'name': place.get('display_name', place.get('name', 'Unknown')),
-                'description': place.get('description', ''),
-                'type': place.get('type', 'attraction'),
-                'categories': place.get('ai_categories', []),
-                'sentiment': place.get('ai_sentiment', 'neutral'),
-                'source_url': place.get('source_url', ''),
-                'weather_suitability': place.get('weather_suitability', {}),
-                'content_type': 'place'
-            }
-            all_content.append(content_item)
-
-        for restaurant in restaurants:
-            content_item = {
-                'id': f"restaurant_{restaurants.index(restaurant)}",
-                'name': restaurant.get('name', 'Unknown'),
-                'description': restaurant.get('description', ''),
-                'type': restaurant.get('type', 'restaurant'),
-                'categories': restaurant.get('ai_categories', []),
-                'sentiment': restaurant.get('ai_sentiment', 'neutral'),
-                'content_type': 'restaurant'
-            }
-            all_content.append(content_item)
-
-        # Update session state with searchable content
-        st.session_state.searchable_content = all_content
-
-        # Update planning system with real data context
-        if hasattr(st.session_state, 'planning_system'):
-            st.session_state.planning_system.gathered_info['real_places'] = len(places)
-            st.session_state.planning_system.gathered_info['real_restaurants'] = len(restaurants)
-            st.session_state.planning_system.gathered_info['contact_verified'] = len(contact_info.get('emails', []))
-            st.session_state.planning_system.gathered_info['social_presence'] = len(social_links)
-
-        return True
-    except Exception as e:
-        print(f"Error updating AI tools: {e}")
-        return False
-
-def load_sample_data():
-    """Load sample data when real data is not available"""
-    sample_places = [
-        {
-            'display_name': 'Sample Tshwane Attraction',
-            'description': 'Sample attraction data - please run the crawler to get real data',
-            'type': 'attraction',
-            'ai_sentiment': 'neutral',
-            'ai_categories': ['sample'],
-            'weather_suitability': {'sunny': 3, 'rainy': 3, 'cloudy': 3, 'hot': 3, 'cold': 3},
-            'verified_source': False,
-            'crawled_from': 'sample_data'
-        }
-    ]
-
-    st.session_state.places_data = sample_places
-    st.session_state.restaurants_data = []
-    st.session_state.contact_info = {'emails': [], 'phones': []}
-    st.session_state.social_links = []
-    st.session_state.data_source = "Sample Data"
-
-def display_enhanced_sidebar_content():
-    """Display enhanced sidebar content with dark theme styling"""
-    # Contact information with styling
-    if st.session_state.contact_info:
-        st.markdown("### 📞 Contact Information")
-
-        emails = st.session_state.contact_info.get('emails', [])
-        if emails:
-            st.markdown("**� Email:**")
-            for email in emails[:2]:
-                st.markdown(f"""
-                <div class="sidebar-button" style="margin: 4px 0; padding: 8px 12px;">
-                    <a href="mailto:{email}" style="color: var(--primary-green); text-decoration: none;">
-                        {email}
-                    </a>
-                </div>
-                """, unsafe_allow_html=True)
-
-        phones = st.session_state.contact_info.get('phones', [])
-        if phones:
-            st.markdown("**📱 Phone:**")
-            for phone in phones[:2]:
-                st.markdown(f"""
-                <div class="sidebar-button" style="margin: 4px 0; padding: 8px 12px;">
-                    <a href="tel:{phone}" style="color: var(--primary-green); text-decoration: none;">
-                        {phone}
-                    </a>
-                </div>
-                """, unsafe_allow_html=True)
-
-    # Social media links with styling
-    if st.session_state.social_links:
-        st.markdown("### 📱 Social Media")
-
-        # Group by platform to avoid duplicates
-        platforms = {}
-        for link in st.session_state.social_links:
-            platform = link.get('platform', 'unknown')
-            if platform not in platforms:
-                platforms[platform] = link
-
-        for platform, link in platforms.items():
-            icon_map = {
-                'facebook': '📘',
-                'twitter': '🐦',
-                'instagram': '📷',
-                'youtube': '📺',
-                'linkedin': '💼'
-            }
-            icon = icon_map.get(platform.lower(), '🔗')
-
-            st.markdown(f"""
-            <div class="sidebar-button" style="margin: 4px 0; padding: 8px 12px;">
-                <a href="{link['url']}" target="_blank" style="color: var(--text-primary); text-decoration: none;">
-                    {icon} {platform.title()}
-                </a>
-            </div>
-            """, unsafe_allow_html=True)
 
 def display_main_content():
     """Main content area with component system"""
@@ -1693,12 +1468,15 @@ def display_main_content():
         # Map controls with CSV-based filters
         map_col1, map_col2, map_col3 = st.columns([1, 1, 2])
         with map_col1:
-            show_places = st.checkbox("Show Places", value=True, key="map_places")
+            show_places = st.checkbox(
+                "Show Places", value=True, key="map_places")
         with map_col2:
-            show_restaurants = st.checkbox("Show Restaurants", value=True, key="map_restaurants")
+            show_restaurants = st.checkbox(
+                "Show Restaurants", value=True, key="map_restaurants")
         with map_col3:
             # Multi-select for place types from CSV
-            available_types = st.session_state.get('available_place_types', ['attraction', 'accommodation', 'restaurant'])
+            available_types = st.session_state.get(
+                'available_place_types', ['attraction', 'accommodation', 'restaurant'])
             selected_types = st.multiselect(
                 "Filter by Type (from CSV)",
                 options=available_types,
@@ -1706,6 +1484,43 @@ def display_main_content():
                 key="map_type_filter",
                 help="Select place types to display on the map"
             )
+
+        # --- Folium Map Integration ---
+        import folium
+        from streamlit_folium import st_folium
+
+        with st.container():
+            st.markdown("### 🗺️ Folium Map of Tshwane Places (from CSV)")
+            # Default Tshwane coordinates
+            default_lat, default_lon = -25.7479, 28.1879
+            m = folium.Map(location=[default_lat, default_lon], zoom_start=11)
+
+            # Add markers for each place with coordinates
+            for place in st.session_state.places_data:
+                lat = place.get('lat', None)
+                lon = place.get('lng', None)
+                try:
+                    if pd.isna(lat) or pd.isna(lon):
+                        continue
+                except Exception:
+                    if lat is None or lon is None:
+                        continue
+                name = place.get('name', 'Unknown')
+                short_desc = place.get('short_description', '')
+                address = place.get('address', '')
+                popup_html = f"""
+                <b>{name}</b><br>
+                <i>{address}</i><br>
+                <p>{short_desc}</p>
+                """
+                folium.Marker(
+                    location=[lat, lon],
+                    popup=folium.Popup(popup_html, max_width=300),
+                    tooltip=name,
+                    icon=folium.Icon(color='green', icon='info-sign')
+                ).add_to(m)
+
+            st_folium(m, width='100%', height=600)
 
         # Create map data from real website content
         if st.session_state.places_data and show_places:
@@ -1733,14 +1548,18 @@ def display_main_content():
                 # Show place details below map
                 with st.expander("📍 Place Details"):
                     for place in st.session_state.places_data:
-                        verified = "✅" if place.get('verified_source') else "⚠️"
-                        st.markdown(f"**🏛️ {place.get('display_name', place.get('name'))}** {verified}")
-                        st.caption(place.get('short_description', place.get('description', '')[:100]))
+                        verified = "✅" if place.get(
+                            'verified_source') else "⚠️"
+                        st.markdown(
+                            f"**🏛️ {place.get('display_name', place.get('name'))}** {verified}")
+                        st.caption(place.get('short_description',
+                                   place.get('description', '')[:100]))
 
         # Fallback to website iframe
         try:
             st.markdown("### 🌐 Official Tshwane Tourism Website")
-            st.components.v1.iframe("http://www.visittshwane.co.za", height=400, scrolling=True)
+            st.components.v1.iframe(
+                "http://www.visittshwane.co.za", height=400, scrolling=True)
         except Exception as e:
             st.error(f"Website loading failed: {e}")
             st.info("Please check your internet connection and try again.")
@@ -1750,7 +1569,8 @@ def display_main_content():
         with gallery_col1:
             st.subheader("🏛️ Places to Visit")
         with gallery_col2:
-            view_mode = st.selectbox("View Mode", ["Gallery", "Dashboard", "Table"], key="gallery_view_mode")
+            view_mode = st.selectbox(
+                "View Mode", ["Gallery", "Dashboard", "Table"], key="gallery_view_mode")
 
         if view_mode == "Dashboard":
             display_places_dashboard()
@@ -1763,6 +1583,10 @@ def display_main_content():
         st.subheader("📝 Book Your Experience")
         display_enhanced_booking_form()
 
+        # Real-time analytics
+        st.subheader("📊 Real-time Analytics")
+        display_analytics_dashboard()
+
     with col2:
         # Weather-based suggestions with AI - Call outside of columns
         st.subheader("🌤️ AI Weather Recommendations")
@@ -1773,50 +1597,130 @@ def display_main_content():
         st.subheader("📊 Real-time Analytics")
         display_analytics_dashboard()
 
+        # Real-time notifications (Lovable-inspired)
+        display_real_time_notifications()
+
+        # --- NEW: Dataframes from scraps and root CSVs ---
+        with st.container():
+            st.markdown("### 📊 Data from Scraps & Project CSVs")
+            import pandas as pd
+            # Scraps CSVs
+            try:
+                df_places = pd.read_csv('scraps/Tryp_Thooe_Tourism-main/tshwane_places.csv')
+                st.markdown('**scraps/tshwane_places.csv**')
+                st.dataframe(df_places, use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.info(f"Could not load scraps places CSV: {e}")
+            try:
+                df_social = pd.read_csv('scraps/Tryp_Thooe_Tourism-main/tshwane_social_links.csv')
+                st.markdown('**scraps/tshwane_social_links.csv**')
+                st.dataframe(df_social, use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.info(f"Could not load scraps social links CSV: {e}")
+            try:
+                df_coords = pd.read_csv('scraps/Tryp_Thooe_Tourism-main/Repo/Tryp_Thooe_Tourism-main/tshwane_places_coordinates.csv')
+                st.markdown('**scraps/Repo/tshwane_places_coordinates.csv**')
+                st.dataframe(df_coords, use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.info(f"Could not load scraps coordinates CSV: {e}")
+            # Root project CSVs
+            try:
+                df_places_root = pd.read_csv('tshwane_places.csv')
+                st.markdown('**tshwane_places.csv**')
+                st.dataframe(df_places_root, use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.info(f"Could not load root places CSV: {e}")
+            try:
+                df_social_root = pd.read_csv('tshwane_social_links.csv')
+                st.markdown('**tshwane_social_links.csv**')
+                st.dataframe(df_social_root, use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.info(f"Could not load root social links CSV: {e}")
+            try:
+                df_coords_root = pd.read_csv('tshwane_coordinates.csv')
+                st.markdown('**tshwane_coordinates.csv**')
+                st.dataframe(df_coords_root, use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.info(f"Could not load root coordinates CSV: {e}")
+            try:
+                df_desc_root = pd.read_csv('tshwane_descriptions.csv')
+                st.markdown('**tshwane_descriptions.csv**')
+                st.dataframe(df_desc_root, use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.info(f"Could not load root descriptions CSV: {e}")
+            try:
+                df_sent_root = pd.read_csv('tshwane_sentiment_data.csv')
+                st.markdown('**tshwane_sentiment_data.csv**')
+                st.dataframe(df_sent_root, use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.info(f"Could not load root sentiment data CSV: {e}")
+            try:
+                df_temp_root = pd.read_csv('tshwane_temperature_data.csv')
+                st.markdown('**tshwane_temperature_data.csv**')
+                st.dataframe(df_temp_root, use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.info(f"Could not load root temperature data CSV: {e}")
+
+
 def display_weather_content():
     """Content for weather suggestions - extracted from display_ai_weather_suggestions"""
     # Get weather options from CSV data
-    weather_options = st.session_state.get('available_weather_options', ["Sunny", "Rainy", "Cloudy", "Hot", "Cold", "Windy", "Mild"])
+    weather_options = st.session_state.get('available_weather_options', [
+                                           "Sunny", "Rainy", "Cloudy", "Hot", "Cold", "Windy", "Mild"])
     # Capitalize first letter for display
-    weather_options_display = [option.capitalize() for option in weather_options]
+    weather_options_display = [option.capitalize()
+                               for option in weather_options]
 
     # Simple layout without nested columns
-    selected_weather = st.selectbox("Current Weather Condition", weather_options_display)
-    
-    auto_detect = st.button("🌡️ Auto-Detect", help="Automatically detect weather (simulated)")
+    selected_weather = st.selectbox(
+        "Current Weather Condition", weather_options_display)
+
+    auto_detect = st.button(
+        "🌡️ Auto-Detect", help="Automatically detect weather (simulated)")
     if auto_detect:
         import random
         selected_weather = random.choice(weather_options)
-        SessionManager.add_notification(f"Weather auto-detected: {selected_weather}", "info")
+        SessionManager.add_notification(
+            f"Weather auto-detected: {selected_weather}", "info")
 
     # Use a separate section for the recommendations
     if st.button("🤖 Get AI Recommendations"):
         if st.session_state.places_data:
             with st.spinner("AI is analyzing weather conditions..."):
-                suggestions = get_enhanced_weather_suggestions(selected_weather, st.session_state.places_data)
+                suggestions = get_enhanced_weather_suggestions(
+                    selected_weather, st.session_state.places_data)
 
                 if suggestions:
-                    st.markdown(f"**🎯 AI Recommendations for {selected_weather.lower()} weather:**")
+                    st.markdown(
+                        f"**🎯 AI Recommendations for {selected_weather.lower()} weather:**")
 
                     # Display recommendations without nested columns
                     for suggestion in suggestions:
                         with st.expander(f"🏛️ {suggestion['name']} (Score: {suggestion.get('weather_suitability_score', 0)})"):
-                            st.markdown(f"**Type:** {suggestion.get('type', 'Unknown')}")
-                            st.markdown(f"**Why recommended:** {suggestion.get('reason', 'Good match for current weather')}")
-                            st.markdown(f"**Weather suitability:** {suggestion.get('weather_suitability_score', 0)}/5")
+                            st.markdown(
+                                f"**Type:** {suggestion.get('type', 'Unknown')}")
+                            st.markdown(
+                                f"**Why recommended:** {suggestion.get('reason', 'Good match for current weather')}")
+                            st.markdown(
+                                f"**Weather suitability:** {suggestion.get('weather_suitability_score', 0)}/5")
 
                             if st.button(f"📋 Quick Book", key=f"quick_book_{suggestion['name']}"):
                                 st.session_state.selected_place = suggestion
-                                SessionManager.add_notification(f"Quick-selected {suggestion['name']}", "success")
+                                SessionManager.add_notification(
+                                    f"Quick-selected {suggestion['name']}", "success")
                 else:
-                    st.info("No specific suggestions available for this weather condition.")
+                    st.info(
+                        "No specific suggestions available for this weather condition.")
         else:
             st.info("Please load website data first.")
 
 # Keep this function for compatibility but make it call the new function
+
+
 def display_ai_weather_suggestions():
     """Compatibility wrapper for display_weather_content"""
     display_weather_content()
+
 
 def display_sidebar_content():
     """Display social links and contact information"""
@@ -1839,32 +1743,34 @@ def display_sidebar_content():
             for phone in st.session_state.contact_info['phones'][:3]:
                 st.write(f"• {phone}")
 
+
 def save_scraped_data(data):
     """Save scraped data to files"""
     try:
         # Save as JSON
         with open('scraped_website_data.json', 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-        
+
         # Save places as CSV
         if data['places']:
             places_df = pd.DataFrame(data['places'])
             places_df.to_csv('tshwane_places.csv', index=False)
-        
+
         # Save restaurants as CSV
         if data['restaurants']:
             restaurants_df = pd.DataFrame(data['restaurants'])
             restaurants_df.to_csv('tshwane_restaurants.csv', index=False)
-        
+
         # Save social links as CSV
         if data['social_links']:
             social_df = pd.DataFrame(data['social_links'])
             social_df.to_csv('tshwane_social_links.csv', index=False)
-        
+
         st.success("✅ Data saved to project folder!")
-        
+
     except Exception as e:
         st.error(f"Error saving data: {e}")
+
 
 def display_enhanced_gallery():
     """Enhanced gallery with CSV data and AI-powered features"""
@@ -1892,7 +1798,8 @@ def display_enhanced_gallery():
 
     with filter_col1:
         # Filter by place types from CSV
-        available_types = st.session_state.get('available_place_types', ['attraction'])
+        available_types = st.session_state.get(
+            'available_place_types', ['attraction'])
         selected_gallery_types = st.multiselect(
             "Filter by Type",
             options=available_types,
@@ -1903,7 +1810,8 @@ def display_enhanced_gallery():
 
     with filter_col2:
         # Filter by sentiment from CSV
-        available_sentiments = list(set([place.get('ai_sentiment', 'neutral') for place in st.session_state.places_data]))
+        available_sentiments = list(set(
+            [place.get('ai_sentiment', 'neutral') for place in st.session_state.places_data]))
         selected_sentiments = st.multiselect(
             "Filter by Sentiment",
             options=available_sentiments,
@@ -1914,7 +1822,8 @@ def display_enhanced_gallery():
 
     with filter_col3:
         # Show data source info
-        st.info(f"📊 Data from: {st.session_state.places_data[0].get('data_source', 'CSV')} ({len(st.session_state.places_data)} places)")
+        st.info(
+            f"📊 Data from: {st.session_state.places_data[0].get('data_source', 'CSV')} ({len(st.session_state.places_data)} places)")
 
     # Filter places based on selections
     filtered_places = [
@@ -1924,7 +1833,8 @@ def display_enhanced_gallery():
     ]
 
     if not filtered_places:
-        st.warning("No places match the selected filters. Please adjust your filter criteria.")
+        st.warning(
+            "No places match the selected filters. Please adjust your filter criteria.")
         return
 
     # Update the places data to use filtered data for gallery display
@@ -1937,31 +1847,37 @@ def display_enhanced_gallery():
         if st.button("⬅️ Previous", help="Navigate to previous place"):
             if 'gallery_index' not in st.session_state:
                 st.session_state.gallery_index = 0
-            st.session_state.gallery_index = max(0, st.session_state.gallery_index - 1)
-            SessionManager.add_notification("Navigated to previous place", "info")
+            st.session_state.gallery_index = max(
+                0, st.session_state.gallery_index - 1)
+            SessionManager.add_notification(
+                "Navigated to previous place", "info")
 
     with col2:
         # Auto-play toggle
-        auto_play = st.toggle("🎬 Auto-play", help="Automatically cycle through places")
+        auto_play = st.toggle(
+            "🎬 Auto-play", help="Automatically cycle through places")
         if auto_play and st.session_state.user_preferences['auto_refresh']:
             time.sleep(3)
             if 'gallery_index' not in st.session_state:
                 st.session_state.gallery_index = 0
-            st.session_state.gallery_index = (st.session_state.gallery_index + 1) % len(current_places_data)
+            st.session_state.gallery_index = (
+                st.session_state.gallery_index + 1) % len(current_places_data)
             st.rerun()
 
     with col3:
         # Random place selector
         if st.button("🎲 Random", help="Show a random place"):
             import random
-            st.session_state.gallery_index = random.randint(0, len(current_places_data) - 1)
+            st.session_state.gallery_index = random.randint(
+                0, len(current_places_data) - 1)
             SessionManager.add_notification("Showing random place", "info")
 
     with col4:
         if st.button("Next ➡️", help="Navigate to next place"):
             if 'gallery_index' not in st.session_state:
                 st.session_state.gallery_index = 0
-            st.session_state.gallery_index = min(len(current_places_data) - 1, st.session_state.gallery_index + 1)
+            st.session_state.gallery_index = min(
+                len(current_places_data) - 1, st.session_state.gallery_index + 1)
             SessionManager.add_notification("Navigated to next place", "info")
 
     # Display current place with enhanced component (using filtered data)
@@ -1978,25 +1894,32 @@ def display_enhanced_gallery():
         # Data source indicator
         data_source = current_place.get('data_source', 'CSV')
         if data_source == "tshwane_places.csv":
-            st.success(f"✅ Data from tshwane_places.csv ({len(current_places_data)} filtered places)")
+            st.success(
+                f"✅ Data from tshwane_places.csv ({len(current_places_data)} filtered places)")
         elif data_source == "Real Website Data":
-            st.success(f"✅ Real data from visittshwane.co.za (Updated: {st.session_state.get('last_updated', 'Unknown')[:19]})")
+            st.success(
+                f"✅ Real data from visittshwane.co.za (Updated: {st.session_state.get('last_updated', 'Unknown')[:19]})")
         else:
             st.info(f"📊 Data source: {data_source}")
 
         # Enhanced gallery card with real website content
-        display_name = current_place.get('display_name', current_place.get('name', 'Unknown Place'))
-        short_desc = current_place.get('short_description', current_place.get('description', 'No description available')[:100] + "...")
-        full_desc = current_place.get('description', 'No description available')
+        display_name = current_place.get(
+            'display_name', current_place.get('name', 'Unknown Place'))
+        short_desc = current_place.get('short_description', current_place.get(
+            'description', 'No description available')[:100] + "...")
+        full_desc = current_place.get(
+            'description', 'No description available')
         place_type = current_place.get('type', 'attraction').title()
         sentiment = current_place.get('ai_sentiment', 'neutral')
         categories = current_place.get('ai_categories', [])
-        source_url = current_place.get('source_url', current_place.get('crawled_from', ''))
+        source_url = current_place.get(
+            'source_url', current_place.get('crawled_from', ''))
         verified = current_place.get('verified_source', False)
         weather_data = current_place.get('weather_suitability', {})
 
         # Sentiment emoji
-        sentiment_emoji = {"positive": "😊", "neutral": "😐", "negative": "😞"}.get(sentiment, "😐")
+        sentiment_emoji = {"positive": "😊", "neutral": "😐",
+                           "negative": "😞"}.get(sentiment, "😐")
 
         # Create a dashboard-style display using Streamlit components
         # Header with place name and status
@@ -2014,7 +1937,8 @@ def display_enhanced_gallery():
         with info_col1:
             st.metric("Type", place_type, delta=None)
         with info_col2:
-            categories_text = ', '.join(categories) if categories else 'General'
+            categories_text = ', '.join(
+                categories) if categories else 'General'
             st.metric("Categories", categories_text, delta=None)
 
         # Overview section
@@ -2022,7 +1946,8 @@ def display_enhanced_gallery():
         st.info(short_desc)
 
         # Data source and location info
-        badge_col1, badge_col2, badge_col3, badge_col4 = st.columns([1, 1, 1, 1])
+        badge_col1, badge_col2, badge_col3, badge_col4 = st.columns([
+                                                                    1, 1, 1, 1])
         with badge_col1:
             st.success("📍 Tshwane")
         with badge_col2:
@@ -2061,7 +1986,8 @@ def display_enhanced_gallery():
         st.markdown("---")
         nav_col1, nav_col2, nav_col3 = st.columns([1, 2, 1])
         with nav_col2:
-            st.metric("Navigation", f"Place {st.session_state.gallery_index + 1} of {len(st.session_state.places_data)}", delta=None)
+            st.metric(
+                "Navigation", f"Place {st.session_state.gallery_index + 1} of {len(st.session_state.places_data)}", delta=None)
 
         # Additional place information with real data
         col1, col2 = st.columns([2, 1])
@@ -2079,7 +2005,8 @@ def display_enhanced_gallery():
                     st.markdown("**Weather Suitability Ratings:**")
 
                     # Create weather dataframe
-                    weather_icons = {"sunny": "☀️", "rainy": "🌧️", "cloudy": "☁️", "hot": "🌡️", "cold": "❄️", "windy": "💨", "mild": "🌤️"}
+                    weather_icons = {"sunny": "☀️", "rainy": "🌧️", "cloudy": "☁️",
+                                     "hot": "🌡️", "cold": "❄️", "windy": "💨", "mild": "🌤️"}
 
                     weather_df_data = []
                     for condition, score in weather_data.items():
@@ -2094,7 +2021,8 @@ def display_enhanced_gallery():
                     if weather_df_data:
                         import pandas as pd
                         weather_df = pd.DataFrame(weather_df_data)
-                        st.dataframe(weather_df, use_container_width=True, hide_index=True)
+                        st.dataframe(
+                            weather_df, use_container_width=True, hide_index=True)
 
                         # Add weather chart
                         import plotly.express as px
@@ -2103,8 +2031,8 @@ def display_enhanced_gallery():
                             'Score': [int(item['Score'].split('/')[0]) for item in weather_df_data]
                         })
                         fig = px.bar(chart_data, x='Condition', y='Score',
-                                   title="Weather Suitability Scores",
-                                   color='Score', color_continuous_scale='Viridis')
+                                     title="Weather Suitability Scores",
+                                     color='Score', color_continuous_scale='Viridis')
                         st.plotly_chart(fig, use_container_width=True)
 
             # AI-powered place analysis
@@ -2118,7 +2046,8 @@ def display_enhanced_gallery():
                     analysis_data = []
                     for line in analysis_lines:
                         if line.strip().startswith('•'):
-                            clean_line = line.strip()[1:].strip()  # Remove bullet point
+                            # Remove bullet point
+                            clean_line = line.strip()[1:].strip()
                             if clean_line:
                                 # Extract emoji and text
                                 parts = clean_line.split(' ', 1)
@@ -2133,29 +2062,34 @@ def display_enhanced_gallery():
                     if analysis_data:
                         import pandas as pd
                         analysis_df = pd.DataFrame(analysis_data)
-                        st.dataframe(analysis_df, use_container_width=True, hide_index=True)
+                        st.dataframe(
+                            analysis_df, use_container_width=True, hide_index=True)
                     else:
                         st.info(analysis)
 
         with col2:
-            book_name = display_name[:20] + "..." if len(display_name) > 20 else display_name
+            book_name = display_name[:20] + \
+                "..." if len(display_name) > 20 else display_name
             if st.button(f"📋 Book Visit", key=f"book_{st.session_state.gallery_index}"):
                 st.session_state.selected_place = current_place
-                SessionManager.add_notification(f"Selected {display_name} for booking!", "success")
+                SessionManager.add_notification(
+                    f"Selected {display_name} for booking!", "success")
                 st.success(f"Selected for booking!")
 
             # Quick actions
             if st.button("🔍 Search Similar", key=f"search_{st.session_state.gallery_index}"):
                 if categories:
                     search_term = categories[0]
-                    results = st.session_state.semantic_search.search_tourism_content(search_term)
+                    results = st.session_state.semantic_search.search_tourism_content(
+                        search_term)
                     if results:
                         st.markdown(f"**🔍 Similar places ({search_term}):**")
 
                         # Create dataframe for similar places
                         similar_data = []
                         for result in results[:3]:
-                            place_name = result.get('display_name', result.get('name', 'Unknown'))
+                            place_name = result.get(
+                                'display_name', result.get('name', 'Unknown'))
                             score = result.get('relevance_score', 0)
                             place_type = result.get('type', 'Unknown')
                             similar_data.append({
@@ -2167,9 +2101,11 @@ def display_enhanced_gallery():
                         if similar_data:
                             import pandas as pd
                             similar_df = pd.DataFrame(similar_data)
-                            st.dataframe(similar_df, use_container_width=True, hide_index=True)
+                            st.dataframe(
+                                similar_df, use_container_width=True, hide_index=True)
                 else:
                     st.info("No categories available for similarity search")
+
 
 def display_places_dashboard():
     """Display all places in a comprehensive dashboard format"""
@@ -2181,8 +2117,10 @@ def display_places_dashboard():
 
     # Summary metrics
     total_places = len(st.session_state.places_data)
-    verified_places = sum(1 for place in st.session_state.places_data if place.get('verified_source', False))
-    place_types = len(set(place.get('type', 'unknown') for place in st.session_state.places_data))
+    verified_places = sum(1 for place in st.session_state.places_data if place.get(
+        'verified_source', False))
+    place_types = len(set(place.get('type', 'unknown')
+                      for place in st.session_state.places_data))
 
     metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
     with metric_col1:
@@ -2192,7 +2130,8 @@ def display_places_dashboard():
     with metric_col3:
         st.metric("Place Types", place_types)
     with metric_col4:
-        places_with_weather = sum(1 for place in st.session_state.places_data if place.get('weather_suitability'))
+        places_with_weather = sum(
+            1 for place in st.session_state.places_data if place.get('weather_suitability'))
         st.metric("Weather Data", places_with_weather)
 
     # Places by type chart
@@ -2208,13 +2147,14 @@ def display_places_dashboard():
         chart_col1, chart_col2 = st.columns(2)
         with chart_col1:
             fig_pie = px.pie(values=list(type_counts.values()), names=list(type_counts.keys()),
-                           title="Places by Type Distribution")
+                             title="Places by Type Distribution")
             st.plotly_chart(fig_pie, use_container_width=True)
 
         with chart_col2:
             fig_bar = px.bar(x=list(type_counts.keys()), y=list(type_counts.values()),
-                           title="Places Count by Type")
+                             title="Places Count by Type")
             st.plotly_chart(fig_bar, use_container_width=True)
+
 
 def display_places_table():
     """Display all places in a comprehensive table format"""
@@ -2229,7 +2169,8 @@ def display_places_table():
 
     table_data = []
     for i, place in enumerate(st.session_state.places_data):
-        sentiment_emoji = {"positive": "😊", "neutral": "😐", "negative": "😞"}.get(place.get('ai_sentiment', 'neutral'), "😐")
+        sentiment_emoji = {"positive": "😊", "neutral": "😐", "negative": "😞"}.get(
+            place.get('ai_sentiment', 'neutral'), "😐")
 
         table_data.append({
             "#": i + 1,
@@ -2249,23 +2190,25 @@ def display_places_table():
         filter_col1, filter_col2, filter_col3 = st.columns(3)
         with filter_col1:
             type_filter = st.multiselect("Filter by Type",
-                                       options=places_df["🏷️ Type"].unique(),
-                                       default=places_df["🏷️ Type"].unique())
+                                         options=places_df["🏷️ Type"].unique(),
+                                         default=places_df["🏷️ Type"].unique())
         with filter_col2:
             verified_filter = st.selectbox("Filter by Verification",
-                                         options=["All", "✅ Yes", "⚠️ No"],
-                                         index=0)
+                                           options=["All", "✅ Yes", "⚠️ No"],
+                                           index=0)
         with filter_col3:
             weather_filter = st.selectbox("Filter by Weather Data",
-                                        options=["All", "✅ Yes", "❌ No"],
-                                        index=0)
+                                          options=["All", "✅ Yes", "❌ No"],
+                                          index=0)
 
         # Apply filters
         filtered_df = places_df[places_df["🏷️ Type"].isin(type_filter)]
         if verified_filter != "All":
-            filtered_df = filtered_df[filtered_df["✅ Verified"] == verified_filter]
+            filtered_df = filtered_df[filtered_df["✅ Verified"]
+                                      == verified_filter]
         if weather_filter != "All":
-            filtered_df = filtered_df[filtered_df["🌤️ Weather"] == weather_filter]
+            filtered_df = filtered_df[filtered_df["🌤️ Weather"]
+                                      == weather_filter]
 
         st.dataframe(filtered_df, use_container_width=True, hide_index=True)
 
@@ -2278,6 +2221,7 @@ def display_places_table():
             mime="text/csv"
         )
 
+
 def analyze_place_with_ai(place: Dict[str, Any]) -> str:
     """AI-powered place analysis using local models"""
     try:
@@ -2289,10 +2233,12 @@ def analyze_place_with_ai(place: Dict[str, Any]) -> str:
 
         # Activity recommendations
         if any(word in description for word in ['outdoor', 'park', 'garden']):
-            analysis_points.append("🌳 Perfect for outdoor activities and nature lovers")
+            analysis_points.append(
+                "🌳 Perfect for outdoor activities and nature lovers")
 
         if any(word in description for word in ['museum', 'gallery', 'historic']):
-            analysis_points.append("🏛️ Rich in cultural and historical significance")
+            analysis_points.append(
+                "🏛️ Rich in cultural and historical significance")
 
         if any(word in description for word in ['family', 'children', 'kids']):
             analysis_points.append("👨‍👩‍👧‍👦 Family-friendly destination")
@@ -2315,6 +2261,7 @@ def analyze_place_with_ai(place: Dict[str, Any]) -> str:
     except Exception as e:
         return f"Analysis temporarily unavailable: {str(e)}"
 
+
 def display_enhanced_booking_form():
     """Enhanced booking form with AI validation and real-time processing"""
     if 'selected_place' not in st.session_state:
@@ -2330,35 +2277,45 @@ def display_enhanced_booking_form():
         col1, col2 = st.columns(2)
 
         with col1:
-            name = st.text_input("Full Name *", placeholder="Enter your full name")
-            email = st.text_input("Email Address *", placeholder="your.email@example.com")
-            whatsapp = st.text_input("WhatsApp Number *", placeholder="+27 XX XXX XXXX")
+            name = st.text_input(
+                "Full Name *", placeholder="Enter your full name")
+            email = st.text_input(
+                "Email Address *", placeholder="your.email@example.com")
+            whatsapp = st.text_input(
+                "WhatsApp Number *", placeholder="+27 XX XXX XXXX")
 
         with col2:
             # AI-powered place suggestions from CSV
-            place_options = [place['name'] for place in st.session_state.places_data]
-            selected_place = st.selectbox("Select Place to Visit (from CSV)", place_options)
+            place_options = [place['name']
+                             for place in st.session_state.places_data]
+            selected_place = st.selectbox(
+                "Select Place to Visit (from CSV)", place_options)
 
             # Multi-select for place types from CSV
-            available_types = st.session_state.get('available_place_types', ['attraction'])
+            available_types = st.session_state.get(
+                'available_place_types', ['attraction'])
             selected_place_types = st.multiselect(
                 "Interested Place Types",
                 options=available_types,
-                default=[st.session_state.places_data[0].get('type', 'attraction')] if st.session_state.places_data else [],
+                default=[st.session_state.places_data[0].get(
+                    'type', 'attraction')] if st.session_state.places_data else [],
                 help="Select types of places you're interested in visiting"
             )
 
             # Smart restaurant recommendations from CSV
             if st.session_state.restaurants_data:
-                restaurant_options = ["None"] + [restaurant['name'] for restaurant in st.session_state.restaurants_data]
-                selected_restaurant = st.selectbox("Select Restaurant (from CSV)", restaurant_options)
+                restaurant_options = ["None"] + [restaurant['name']
+                                                 for restaurant in st.session_state.restaurants_data]
+                selected_restaurant = st.selectbox(
+                    "Select Restaurant (from CSV)", restaurant_options)
                 make_reservation = st.checkbox("Make restaurant reservation")
             else:
                 selected_restaurant = "None"
                 make_reservation = False
 
         # Additional smart fields
-        visit_date = st.date_input("Preferred Visit Date", min_value=datetime.now().date())
+        visit_date = st.date_input(
+            "Preferred Visit Date", min_value=datetime.now().date())
 
         # AI-powered special requests with suggestions
         special_requests = st.text_area(
@@ -2406,44 +2363,58 @@ def display_enhanced_booking_form():
             )
 
             with st.spinner("Processing booking with AI..."):
-                result = st.session_state.real_time_processor.process_task(task_id)
+                result = st.session_state.real_time_processor.process_task(
+                    task_id)
 
                 if result.get('success'):
                     process_enhanced_booking(booking_data)
-                    SessionManager.add_notification(f"Booking confirmed: {result.get('booking_id')}", "success")
+                    SessionManager.add_notification(
+                        f"Booking confirmed: {result.get('booking_id')}", "success")
                 else:
-                    SessionManager.add_notification("Booking processing failed", "error")
+                    SessionManager.add_notification(
+                        "Booking processing failed", "error")
+
 
 def calculate_booking_score(booking_data: Dict[str, Any]) -> float:
     """Calculate booking validation score"""
     score = 0.0
 
     # Basic field validation
-    if booking_data.get('name'): score += 0.2
-    if booking_data.get('email') and '@' in booking_data['email']: score += 0.2
-    if booking_data.get('whatsapp'): score += 0.2
-    if booking_data.get('selected_place'): score += 0.2
-    if booking_data.get('visit_date'): score += 0.2
+    if booking_data.get('name'):
+        score += 0.2
+    if booking_data.get('email') and '@' in booking_data['email']:
+        score += 0.2
+    if booking_data.get('whatsapp'):
+        score += 0.2
+    if booking_data.get('selected_place'):
+        score += 0.2
+    if booking_data.get('visit_date'):
+        score += 0.2
 
     return score
+
 
 def display_booking_form():
     """Display booking form with encryption"""
     if 'selected_place' not in st.session_state:
         st.info("Please select a place from the gallery above.")
         return
-    
+
     with st.form("booking_form"):
         st.write(f"**Booking for:** {st.session_state.selected_place['name']}")
-        
+
         # User details
         name = st.text_input("Full Name *", placeholder="Enter your full name")
-        email = st.text_input("Email Address *", placeholder="your.email@example.com")
-        whatsapp = st.text_input("WhatsApp Number *", placeholder="+27 XX XXX XXXX")
-        
+        email = st.text_input(
+            "Email Address *", placeholder="your.email@example.com")
+        whatsapp = st.text_input(
+            "WhatsApp Number *", placeholder="+27 XX XXX XXXX")
+
         # Place selection from CSV
-        place_options = [place['name'] for place in st.session_state.places_data]
-        selected_place = st.selectbox("Select Place to Visit (from CSV)", place_options)
+        place_options = [place['name']
+                         for place in st.session_state.places_data]
+        selected_place = st.selectbox(
+            "Select Place to Visit (from CSV)", place_options)
 
         # Multi-select for additional places from CSV
         additional_places = st.multiselect(
@@ -2454,19 +2425,22 @@ def display_booking_form():
 
         # Restaurant selection from CSV
         if st.session_state.restaurants_data:
-            restaurant_options = ["None"] + [restaurant['name'] for restaurant in st.session_state.restaurants_data]
-            selected_restaurant = st.selectbox("Select Restaurant (from CSV)", restaurant_options)
+            restaurant_options = ["None"] + [restaurant['name']
+                                             for restaurant in st.session_state.restaurants_data]
+            selected_restaurant = st.selectbox(
+                "Select Restaurant (from CSV)", restaurant_options)
             make_reservation = st.checkbox("Make restaurant reservation")
         else:
             selected_restaurant = "None"
             make_reservation = False
-        
+
         # Additional details
         visit_date = st.date_input("Preferred Visit Date")
-        special_requests = st.text_area("Special Requests", placeholder="Any special requirements or requests...")
-        
+        special_requests = st.text_area(
+            "Special Requests", placeholder="Any special requirements or requests...")
+
         submitted = st.form_submit_button("🚀 Submit Booking")
-        
+
         if submitted:
             if name and email and whatsapp:
                 # Create booking data
@@ -2482,52 +2456,55 @@ def display_booking_form():
                     'timestamp': datetime.now().isoformat(),
                     'booking_id': hashlib.md5(f"{name}{email}{datetime.now()}".encode()).hexdigest()[:8]
                 }
-                
+
                 # Save and send booking
                 process_booking(booking_data)
             else:
                 st.error("Please fill in all required fields marked with *")
+
 
 def process_booking(booking_data):
     """Process booking with encryption and email sending"""
     try:
         # Generate encryption key
         key = generate_key()
-        
+
         # Encrypt sensitive data
         encrypted_data = encrypt_data(json.dumps(booking_data), key)
-        
+
         # Save to DataFrame
         df = pd.DataFrame([booking_data])
         df.to_csv(f"booking_{booking_data['booking_id']}.csv", index=False)
-        
+
         # Save encrypted version
         with open(f"encrypted_booking_{booking_data['booking_id']}.txt", 'wb') as f:
             f.write(encrypted_data)
-        
+
         # Save encryption key separately
         with open(f"key_{booking_data['booking_id']}.key", 'wb') as f:
             f.write(key)
-        
+
         # Send email (simulated)
         send_booking_email(booking_data)
-        
+
         # Display confirmation
-        st.success(f"✅ Booking submitted successfully! Booking ID: {booking_data['booking_id']}")
-        
+        st.success(
+            f"✅ Booking submitted successfully! Booking ID: {booking_data['booking_id']}")
+
         # Add to notifications
         if 'notifications' not in st.session_state:
             st.session_state.notifications = []
-        
+
         st.session_state.notifications.append({
             'type': 'booking',
             'message': f"New booking for {booking_data['selected_place']} by {booking_data['name']}",
             'timestamp': datetime.now(),
             'data': booking_data
         })
-        
+
     except Exception as e:
         st.error(f"Error processing booking: {e}")
+
 
 def send_booking_email(booking_data):
     """Simulate sending email to secretary"""
@@ -2556,16 +2533,18 @@ def send_booking_email(booking_data):
     Contact: Thapelo Kgothatso Thooe
     Email: kgothatsothooe@gmail.com
     """
-    
+
     # Save email content to file
     with open(f"email_booking_{booking_data['booking_id']}.txt", 'w') as f:
         f.write(email_content)
-    
+
     st.info("📧 Booking details prepared for email to secretary@tshwanetourism.com")
+
 
 def display_ai_weather_suggestions():
     """Compatibility wrapper for display_weather_content"""
     display_weather_content()
+
 
 def get_enhanced_weather_suggestions(weather_condition: str, places_data: List[Dict]) -> List[Dict]:
     """Enhanced weather suggestions with AI scoring"""
@@ -2607,20 +2586,23 @@ def get_enhanced_weather_suggestions(weather_condition: str, places_data: List[D
         }
     }
 
-    weather_info = weather_mapping.get(weather_condition.lower(), weather_mapping['mild'])
+    weather_info = weather_mapping.get(
+        weather_condition.lower(), weather_mapping['mild'])
     keywords = weather_info['keywords']
     avoid_keywords = weather_info['avoid']
     reason = weather_info['reason']
 
     suggestions = []
     for place in places_data:
-        content = str(place.get('description', '') + ' ' + place.get('name', '')).lower()
+        content = str(place.get('description', '') +
+                      ' ' + place.get('name', '')).lower()
 
         # Calculate positive score
         positive_score = sum(1 for keyword in keywords if keyword in content)
 
         # Calculate negative score
-        negative_score = sum(1 for keyword in avoid_keywords if keyword in content)
+        negative_score = sum(
+            1 for keyword in avoid_keywords if keyword in content)
 
         # Final score (0-5 scale)
         final_score = max(0, min(5, positive_score - negative_score))
@@ -2632,8 +2614,10 @@ def get_enhanced_weather_suggestions(weather_condition: str, places_data: List[D
             suggestions.append(place_copy)
 
     # Sort by score and return top suggestions
-    suggestions.sort(key=lambda x: x.get('weather_suitability_score', 0), reverse=True)
+    suggestions.sort(key=lambda x: x.get(
+        'weather_suitability_score', 0), reverse=True)
     return suggestions[:5]
+
 
 def display_weather_insights(weather_condition: str):
     """Display weather-specific insights and tips"""
@@ -2680,6 +2664,7 @@ def display_weather_insights(weather_condition: str):
             for activity in insight['activities']:
                 st.markdown(f"• {activity}")
 
+
 def display_real_time_notifications():
     """Real-time notification system (Lovable-inspired)"""
     if st.session_state.notifications:
@@ -2707,6 +2692,7 @@ def display_real_time_notifications():
                 }
             )
 
+
 def display_analytics_dashboard():
     """Real-time analytics dashboard"""
     if not st.session_state.places_data and not st.session_state.restaurants_data:
@@ -2732,7 +2718,8 @@ def display_analytics_dashboard():
         notification_types = {}
         for notif in st.session_state.notifications:
             notif_type = notif['type']
-            notification_types[notif_type] = notification_types.get(notif_type, 0) + 1
+            notification_types[notif_type] = notification_types.get(
+                notif_type, 0) + 1
 
         if notification_types:
             fig = px.pie(
@@ -2741,6 +2728,7 @@ def display_analytics_dashboard():
                 title="Notification Types Distribution"
             )
             st.plotly_chart(fig, use_container_width=True)
+
 
 def process_enhanced_booking(booking_data: Dict[str, Any]):
     """Enhanced booking processing with AI features"""
@@ -2769,7 +2757,8 @@ def process_enhanced_booking(booking_data: Dict[str, Any]):
         # Display confirmation with AI insights
         st.success(f"✅ Booking processed successfully!")
         st.info(f"🆔 Booking ID: {booking_data['booking_id']}")
-        st.info(f"🤖 AI Validation Score: {booking_data.get('validation_score', 0):.1f}/1.0")
+        st.info(
+            f"🤖 AI Validation Score: {booking_data.get('validation_score', 0):.1f}/1.0")
 
         # Add to notifications with enhanced details
         SessionManager.add_notification(
@@ -2779,7 +2768,9 @@ def process_enhanced_booking(booking_data: Dict[str, Any]):
 
     except Exception as e:
         st.error(f"Error processing booking: {e}")
-        SessionManager.add_notification(f"Booking processing failed: {str(e)}", "error")
+        SessionManager.add_notification(
+            f"Booking processing failed: {str(e)}", "error")
+
 
 def send_enhanced_booking_email(booking_data: Dict[str, Any]):
     """Enhanced email sending with AI-generated content"""
@@ -2851,12 +2842,6 @@ def send_enhanced_booking_email(booking_data: Dict[str, Any]):
 
     st.info("📧 Enhanced booking email prepared for secretary@tshwanetourism.com")
 
+
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
