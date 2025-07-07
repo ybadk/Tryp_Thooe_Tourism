@@ -898,7 +898,7 @@ def extract_restaurants(soup):
 def load_weather_model():
     """Load Hugging Face model for weather-based suggestions"""
     try:
-        # Using a simple text classification model
+        from transformers import pipeline
         classifier = pipeline(
             "text-classification", model="cardiffnlp/twitter-roberta-base-sentiment-latest")
         return classifier
@@ -916,14 +916,11 @@ def get_weather_suggestions(weather_condition, places_data):
         'hot': ['water', 'shade', 'indoor', 'air-conditioned', 'cool'],
         'cold': ['indoor', 'warm', 'cozy', 'heated', 'shelter']
     }
-
     suggestions = []
     keywords = weather_mapping.get(weather_condition.lower(), [])
-
     for place in places_data:
         if any(keyword in place['description'].lower() for keyword in keywords):
             suggestions.append(place)
-
     return suggestions[:5]  # Return top 5 suggestions
 
 # Enhanced main application with AI tool integrations
@@ -1468,7 +1465,7 @@ def display_enhanced_sidebar():
         nav_links = [
             ("Places Gallery", "gallery", '🏛️'),
             ("Booking Form", "booking", '📝'),
-            ("Weather Guide", "weather", '🌤️'),
+            ("Weather Guide", "weather_guide", '🌤️'),
             ("Analytics", "analytics", '📊'),
             ("Contact Info", "contact", '📞'),
         ]
@@ -1479,7 +1476,7 @@ def display_enhanced_sidebar():
                             key=f"nav_{key}", help=f"Go to {text}")
             if btn:
                 st.session_state.current_section = key
-                st.experimental_rerun()
+                st.rerun()
 
         st.markdown("### 📊 System Status")
         st.metric("Places", len(st.session_state['places_data']), delta=None)
@@ -1494,13 +1491,15 @@ def display_enhanced_sidebar():
             try:
                 import pytesseract
                 from PIL import Image
+            except ImportError:
+                st.error(
+                    "OCR requires 'pytesseract' and 'Pillow'. Please install them with 'pip install pytesseract pillow'.")
+            else:
                 img = Image.open(uploaded_file)
                 st.image(img, caption="Uploaded Image", use_column_width=True)
                 text = pytesseract.image_to_string(img)
                 st.markdown("**Extracted Text:**")
                 st.code(text)
-            except Exception as e:
-                st.error(f"OCR failed: {e}")
 
 # 5. Left-side container for place summary/notifications
 
@@ -1534,6 +1533,7 @@ def simulate_whatsapp_notification(booking_data):
 
 
 def display_enhanced_booking_form(allow_place_select=False):
+    """Enhanced booking form with AI validation and real-time processing"""
     if 'selected_place' not in st.session_state or allow_place_select:
         place_options = [place['name']
                          for place in st.session_state.places_data]
@@ -1858,40 +1858,57 @@ def display_main_content():
             except Exception as e:
                 st.info(f"Could not load root temperature data CSV: {e}")
 
+    if st.session_state.get('current_section') == 'weather_guide':
+        st.header("🌤️ Weather-Based Suggestions")
+        st.markdown("Get suggestions for places to visit based on the weather.")
+        temp_csv = "tshwane_temperature_data.csv"
+        if os.path.exists(temp_csv):
+            temp_df = pd.read_csv(temp_csv)
+            st.dataframe(temp_df)
+        weather = st.selectbox(
+            "Weather", ["Sunny", "Rainy", "Cloudy", "Hot", "Cold"])
+        if st.button("Suggest Places"):
+            suggestions = get_weather_suggestions(
+                weather, st.session_state.get('places_data', []))
+            if suggestions:
+                st.dataframe(pd.DataFrame(suggestions))
+            else:
+                st.info("No suggestions found for this weather condition.")
+        return
+
 
 def display_weather_content():
-    """Content for weather suggestions - extracted from display_ai_weather_suggestions"""
-    # Get weather options from CSV data
-    weather_options = st.session_state.get('available_weather_options', [
-                                           "Sunny", "Rainy", "Cloudy", "Hot", "Cold", "Windy", "Mild"])
-    # Capitalize first letter for display
+    """Content for weather suggestions - now loads from tshwane_temperature_data.csv"""
+    # Load temperature data
+    temp_csv = "tshwane_temperature_data.csv"
+    temp_df = None
+    if os.path.exists(temp_csv):
+        temp_df = pd.read_csv(temp_csv)
+        st.dataframe(temp_df)
+        weather_options = temp_df['weather'].unique().tolist() if 'weather' in temp_df.columns else [
+            "Sunny", "Rainy", "Cloudy", "Hot", "Cold", "Windy", "Mild"]
+    else:
+        weather_options = ["Sunny", "Rainy",
+                           "Cloudy", "Hot", "Cold", "Windy", "Mild"]
     weather_options_display = [option.capitalize()
                                for option in weather_options]
-
-    # Simple layout without nested columns
     selected_weather = st.selectbox(
         "Current Weather Condition", weather_options_display)
-
     auto_detect = st.button(
         "🌡️ Auto-Detect", help="Automatically detect weather (simulated)")
-    if auto_detect:
+    if auto_detect and temp_df is not None:
         import random
         selected_weather = random.choice(weather_options)
         SessionManager.add_notification(
             f"Weather auto-detected: {selected_weather}", "info")
-
-    # Use a separate section for the recommendations
     if st.button("🤖 Get AI Recommendations"):
         if st.session_state.places_data:
             with st.spinner("AI is analyzing weather conditions..."):
                 suggestions = get_enhanced_weather_suggestions(
-                    selected_weather, st.session_state.places_data)
-
+                    selected_weather, st.session_state.places_data, temp_df)
                 if suggestions:
                     st.markdown(
                         f"**🎯 AI Recommendations for {selected_weather.lower()} weather:**")
-
-                    # Display recommendations without nested columns
                     for suggestion in suggestions:
                         with st.expander(f"🏛️ {suggestion['name']} (Score: {suggestion.get('weather_suitability_score', 0)})"):
                             st.markdown(
@@ -1900,7 +1917,6 @@ def display_weather_content():
                                 f"**Why recommended:** {suggestion.get('reason', 'Good match for current weather')}")
                             st.markdown(
                                 f"**Weather suitability:** {suggestion.get('weather_suitability_score', 0)}/5")
-
                             if st.button(f"📋 Quick Book", key=f"quick_book_{suggestion['name']}"):
                                 st.session_state.selected_place = suggestion
                                 SessionManager.add_notification(
@@ -1911,12 +1927,77 @@ def display_weather_content():
         else:
             st.info("Please load website data first.")
 
-# Keep this function for compatibility but make it call the new function
 
-
-def display_ai_weather_suggestions():
-    """Compatibility wrapper for display_weather_content"""
-    display_weather_content()
+def get_enhanced_weather_suggestions(weather_condition: str, places_data: list, temp_df=None) -> list:
+    """Enhanced weather suggestions using temperature data from CSV if available"""
+    if temp_df is not None and 'weather' in temp_df.columns:
+        valid_places = temp_df[temp_df['weather'].str.lower(
+        ) == weather_condition.lower()]['place'].tolist()
+        suggestions = [place for place in places_data if place.get(
+            'name') in valid_places]
+        for place in suggestions:
+            place['weather_suitability_score'] = 5
+            place['reason'] = f"Matched from temperature data for {weather_condition} weather."
+        return suggestions[:5]
+    # fallback to previous logic
+    weather_mapping = {
+        'sunny': {
+            'keywords': ['outdoor', 'park', 'garden', 'hiking', 'monument', 'scenic', 'nature'],
+            'avoid': ['indoor', 'covered'],
+            'reason': 'Perfect for outdoor exploration and sightseeing'
+        },
+        'rainy': {
+            'keywords': ['indoor', 'museum', 'gallery', 'shopping', 'theater', 'cultural', 'covered'],
+            'avoid': ['outdoor', 'hiking'],
+            'reason': 'Stay dry while enjoying cultural experiences'
+        },
+        'cloudy': {
+            'keywords': ['walking', 'city', 'historic', 'market', 'cultural', 'photography'],
+            'avoid': [],
+            'reason': 'Great lighting for photography and comfortable walking'
+        },
+        'hot': {
+            'keywords': ['water', 'shade', 'indoor', 'cool', 'air-conditioned', 'swimming'],
+            'avoid': ['hiking', 'strenuous'],
+            'reason': 'Stay cool and comfortable during hot weather'
+        },
+        'cold': {
+            'keywords': ['indoor', 'warm', 'cozy', 'heated', 'shelter', 'hot drinks'],
+            'avoid': ['outdoor', 'water'],
+            'reason': 'Warm and comfortable indoor experiences'
+        },
+        'windy': {
+            'keywords': ['indoor', 'sheltered', 'stable'],
+            'avoid': ['outdoor', 'high places'],
+            'reason': 'Protected from strong winds'
+        },
+        'mild': {
+            'keywords': ['walking', 'outdoor', 'sightseeing', 'flexible'],
+            'avoid': [],
+            'reason': 'Perfect weather for any activity'
+        }
+    }
+    weather_info = weather_mapping.get(
+        weather_condition.lower(), weather_mapping['mild'])
+    keywords = weather_info['keywords']
+    avoid_keywords = weather_info['avoid']
+    reason = weather_info['reason']
+    suggestions = []
+    for place in places_data:
+        content = str(place.get('description', '') +
+                      ' ' + place.get('name', '')).lower()
+        positive_score = sum(1 for keyword in keywords if keyword in content)
+        negative_score = sum(
+            1 for keyword in avoid_keywords if keyword in content)
+        final_score = max(0, min(5, positive_score - negative_score))
+        if final_score > 0:
+            place_copy = place.copy()
+            place_copy['weather_suitability_score'] = final_score
+            place_copy['reason'] = reason
+            suggestions.append(place_copy)
+    suggestions.sort(key=lambda x: x.get(
+        'weather_suitability_score', 0), reverse=True)
+    return suggestions[:5]
 
 
 def display_sidebar_content():
@@ -2065,8 +2146,11 @@ def display_enhanced_gallery():
             pass
     # Coordinates
     lat, lon = place.get('latitude'), place.get('longitude')
-    if pd.notna(lat) and pd.notna(lon):
-        st.map(pd.DataFrame({'lat': [lat], 'lon': [lon]}))
+    try:
+        if pd.notna(lat) and pd.notna(lon):
+            st.map(pd.DataFrame({'lat': [lat], 'lon': [lon]}))
+    except Exception:
+        pass
     # Book Now button
     if st.button('📋 Book Now', key=f'book_{st.session_state.gallery_index}'):
         st.session_state.selected_place = {
@@ -2077,7 +2161,7 @@ def display_enhanced_gallery():
             'longitude': lon
         }
         st.session_state.current_section = 'booking'
-        st.experimental_rerun()
+        st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -2239,7 +2323,6 @@ def analyze_place_with_ai(place: Dict[str, Any]) -> str:
 def display_enhanced_booking_form(allow_place_select=False):
     """Enhanced booking form with AI validation and real-time processing"""
     if 'selected_place' not in st.session_state or allow_place_select:
-        # Allow user to select a place if not already selected or if forced
         place_options = [place['name']
                          for place in st.session_state.places_data]
         selected_place = st.selectbox(
@@ -2248,7 +2331,45 @@ def display_enhanced_booking_form(allow_place_select=False):
             (place for place in st.session_state.places_data if place['name'] == selected_place),
             None
         )
-    # ... rest of the booking form code ...
+    # Restaurant multi-choice
+    try:
+        df_places = pd.read_csv(
+            'scraps/Tryp_Thooe_Tourism-main/processed_data/tshwane_places.csv')
+        restaurant_options = df_places[df_places['type']
+                                       == 'restaurant']['name'].tolist()
+    except Exception:
+        restaurant_options = []
+    selected_restaurants = st.multiselect(
+        "Select Restaurants (optional)", restaurant_options)
+    make_reservation = st.checkbox("Make restaurant reservation")
+    # User details
+    name = st.text_input("Full Name *", placeholder="Enter your full name")
+    email = st.text_input(
+        "Email Address *", placeholder="your.email@example.com")
+    whatsapp = st.text_input(
+        "WhatsApp Number *", placeholder="+27 XX XXX XXXX")
+    visit_date = st.date_input("Preferred Visit Date")
+    special_requests = st.text_area(
+        "Special Requests", placeholder="Any special requirements or requests...")
+    submitted = st.button("🚀 Submit Booking")
+    if submitted:
+        if name and email and whatsapp:
+            booking_data = {
+                'name': name,
+                'email': email,
+                'whatsapp': whatsapp,
+                'selected_place': st.session_state.selected_place['name'],
+                'selected_restaurants': selected_restaurants,
+                'make_reservation': make_reservation,
+                'visit_date': str(visit_date),
+                'special_requests': special_requests,
+                'timestamp': datetime.now().isoformat(),
+                'booking_id': hashlib.md5(f"{name}{email}{datetime.now()}".encode()).hexdigest()[:8]
+            }
+            process_booking(booking_data)
+            simulate_whatsapp_notification(booking_data)
+        else:
+            st.error("Please fill in all required fields marked with *")
 
 
 def calculate_booking_score(booking_data: Dict[str, Any]) -> float:
@@ -2422,79 +2543,6 @@ def display_ai_weather_suggestions():
     display_weather_content()
 
 
-def get_enhanced_weather_suggestions(weather_condition: str, places_data: List[Dict]) -> List[Dict]:
-    """Enhanced weather suggestions with AI scoring"""
-    weather_mapping = {
-        'sunny': {
-            'keywords': ['outdoor', 'park', 'garden', 'hiking', 'monument', 'scenic', 'nature'],
-            'avoid': ['indoor', 'covered'],
-            'reason': 'Perfect for outdoor exploration and sightseeing'
-        },
-        'rainy': {
-            'keywords': ['indoor', 'museum', 'gallery', 'shopping', 'theater', 'cultural', 'covered'],
-            'avoid': ['outdoor', 'hiking'],
-            'reason': 'Stay dry while enjoying cultural experiences'
-        },
-        'cloudy': {
-            'keywords': ['walking', 'city', 'historic', 'market', 'cultural', 'photography'],
-            'avoid': [],
-            'reason': 'Great lighting for photography and comfortable walking'
-        },
-        'hot': {
-            'keywords': ['water', 'shade', 'indoor', 'cool', 'air-conditioned', 'swimming'],
-            'avoid': ['hiking', 'strenuous'],
-            'reason': 'Stay cool and comfortable during hot weather'
-        },
-        'cold': {
-            'keywords': ['indoor', 'warm', 'cozy', 'heated', 'shelter', 'hot drinks'],
-            'avoid': ['outdoor', 'water'],
-            'reason': 'Warm and comfortable indoor experiences'
-        },
-        'windy': {
-            'keywords': ['indoor', 'sheltered', 'stable'],
-            'avoid': ['outdoor', 'high places'],
-            'reason': 'Protected from strong winds'
-        },
-        'mild': {
-            'keywords': ['walking', 'outdoor', 'sightseeing', 'flexible'],
-            'avoid': [],
-            'reason': 'Perfect weather for any activity'
-        }
-    }
-
-    weather_info = weather_mapping.get(
-        weather_condition.lower(), weather_mapping['mild'])
-    keywords = weather_info['keywords']
-    avoid_keywords = weather_info['avoid']
-    reason = weather_info['reason']
-
-    suggestions = []
-    for place in places_data:
-        content = str(place.get('description', '') +
-                      ' ' + place.get('name', '')).lower()
-
-        # Calculate positive score
-        positive_score = sum(1 for keyword in keywords if keyword in content)
-
-        # Calculate negative score
-        negative_score = sum(
-            1 for keyword in avoid_keywords if keyword in content)
-
-        # Final score (0-5 scale)
-        final_score = max(0, min(5, positive_score - negative_score))
-
-        if final_score > 0:
-            place_copy = place.copy()
-            place_copy['weather_suitability_score'] = final_score
-            place_copy['reason'] = reason
-            suggestions.append(place_copy)
-
-    # Sort by score and return top suggestions
-    suggestions.sort(key=lambda x: x.get(
-        'weather_suitability_score', 0), reverse=True)
-    return suggestions[:5]
-
-
 def display_weather_insights(weather_condition: str):
     """Display weather-specific insights and tips"""
     insights = {
@@ -2574,12 +2622,10 @@ def display_analytics_dashboard():
     if not st.session_state.places_data and not st.session_state.restaurants_data:
         st.info("Load data to see analytics")
         return
-
     # Basic analytics
     total_places = len(st.session_state.places_data)
     total_restaurants = len(st.session_state.restaurants_data)
     total_notifications = len(st.session_state.notifications)
-
     # Metrics display
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -2588,7 +2634,6 @@ def display_analytics_dashboard():
         st.metric("Restaurants", total_restaurants, delta=None)
     with col3:
         st.metric("Notifications", total_notifications, delta=None)
-
     # Activity chart
     if st.session_state.notifications:
         notification_types = {}
@@ -2596,14 +2641,14 @@ def display_analytics_dashboard():
             notif_type = notif['type']
             notification_types[notif_type] = notification_types.get(
                 notif_type, 0) + 1
-
         if notification_types:
             fig = px.pie(
                 values=list(notification_types.values()),
                 names=list(notification_types.keys()),
                 title="Notification Types Distribution"
             )
-            st.plotly_chart(fig, use_container_width=True)
+            unique_key = f"notification_types_pie_{uuid.uuid4()}"
+            st.plotly_chart(fig, use_container_width=True, key=unique_key)
 
 
 def process_enhanced_booking(booking_data: Dict[str, Any]):
