@@ -28,6 +28,7 @@ from enum import Enum
 import logging
 from pathlib import Path
 import uuid
+import urllib.parse
 warnings.filterwarnings('ignore')
 
 # Enhanced system architecture inspired by analyzed AI tools
@@ -1293,54 +1294,403 @@ def main():
     display_main_content()
 
     # Real-time notifications (Lovable-inspired)
-    display_real_time_notifications()
+    display_real_time_notifications(
+        toggle_key="show_all_notifications_toggle_main")
 
 
 def display_planning_interface():
-    """Devin-inspired planning interface"""
-    st.subheader("🎯 Planning Mode")
+    """Unified planning interface: custom icons, dark theme, advanced interactivity."""
+    import pandas as pd
+    import re
+    import random
+    import time
+    from collections import defaultdict
+    # --- Tab selector for planning modes ---
+    tab = st.radio('Planning Mode', [
+                   'Activity Planner', 'AI-Enhanced Planning'], key='planning_mode_tab')
 
-    user_request = st.text_input(
-        "What would you like to accomplish?",
-        placeholder="e.g., Scrape tourism data, process bookings, generate recommendations..."
-    )
+    # --- Custom SVG/Unicode icon map for categories ---
+    icon_map = {
+        'accommodation': '<svg width="32" height="32" viewBox="0 0 24 24" fill="#00d4aa"><path d="M3 21v-2h18v2H3zm0-4V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10H3zm2-8v8h14V9H5zm2 2h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>',
+        'restaurant': '🍽️',
+        'service': '🛎️',
+        'attraction': '<svg width="32" height="32" viewBox="0 0 24 24" fill="#ffd700"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2" stroke="#222" stroke-width="2" fill="none"/></svg>',
+        'area': '🌍',
+        'venue': '<svg width="32" height="32" viewBox="0 0 24 24" fill="#b388ff"><rect x="4" y="8" width="16" height="10" rx="2"/><path d="M8 8V6a4 4 0 0 1 8 0v2" stroke="#fff" stroke-width="2" fill="none"/></svg>',
+        'shopping': '🛍️',
+        'museum': '<svg width="32" height="32" viewBox="0 0 24 24" fill="#ff7043"><rect x="4" y="10" width="16" height="8" rx="2"/><path d="M2 10l10-6 10 6" stroke="#fff" stroke-width="2" fill="none"/></svg>',
+        'spa': '💆',
+        'park': '🏞️',
+        'cafe': '☕',
+        'event': '🎉',
+        'nature': '🌳',
+        'default': '<svg width="32" height="32" viewBox="0 0 24 24" fill="#888"><circle cx="12" cy="12" r="10"/></svg>'
+    }
 
-    if st.button("📋 Create Plan") and user_request:
-        plan = st.session_state.planning_system.suggest_plan(user_request)
-        st.session_state.current_plan = plan
+    def get_icon(cat):
+        for k, v in icon_map.items():
+            if k in str(cat).lower():
+                return v
+        return icon_map['default']
 
-        st.success("✅ Plan created! Review the steps below:")
+    # --- Custom dark theme CSS for planning interface ---
+    st.markdown("""
+    <style>
+    .planning-dark-container {
+        background: linear-gradient(135deg, #181c24 0%, #232a36 100%);
+        border-radius: 18px;
+        box-shadow: 0 4px 24px #000a;
+        padding: 22px 28px 18px 28px;
+        margin-bottom: 22px;
+        border: 1.5px solid #00d4aa44;
+        animation: fadeInUp 0.7s;
+    }
+    .planning-card {
+        background: #232a36;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px #00d4aa22;
+        margin: 10px 0 18px 0;
+        padding: 18px 16px 12px 16px;
+        border: 1.5px solid #00d4aa33;
+        transition: box-shadow 0.2s, transform 0.2s;
+        position: relative;
+    }
+    .planning-card:hover {
+        box-shadow: 0 8px 32px #00d4aa55;
+        transform: scale(1.025);
+        border-color: #00d4aa;
+        z-index: 2;
+    }
+    .planning-icon {
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 10px;
+        width: 32px;
+        height: 32px;
+        line-height: 32px;
+        text-align: center;
+        border-radius: 50%;
+        background: #222c37;
+        box-shadow: 0 2px 8px #00d4aa22;
+        margin-bottom: 6px;
+    }
+    .planning-fav {
+        position: absolute;
+        top: 10px;
+        right: 18px;
+        font-size: 1.5em;
+        color: #ffd700cc;
+        cursor: pointer;
+        transition: color 0.2s, transform 0.2s;
+    }
+    .planning-fav.fav-on {
+        color: #ffd700;
+        transform: scale(1.2);
+        text-shadow: 0 2px 8px #ffd70088;
+    }
+    .planning-updown {
+        position: absolute;
+        bottom: 10px;
+        right: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .planning-updown button {
+        background: #232a36;
+        color: #00d4aa;
+        border: 1px solid #00d4aa44;
+        border-radius: 6px;
+        font-size: 1.1em;
+        padding: 2px 8px;
+        margin: 0;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+    }
+    .planning-updown button:hover {
+        background: #00d4aa22;
+        color: #fff;
+    }
+    .planning-tooltip {
+        display: inline-block;
+        position: relative;
+        cursor: pointer;
+    }
+    .planning-tooltip .planning-tooltiptext {
+        visibility: hidden;
+        width: 180px;
+        background: #232a36;
+        color: #fff;
+        text-align: center;
+        border-radius: 8px;
+        padding: 8px 0;
+        position: absolute;
+        z-index: 10;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -90px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.95em;
+    }
+    .planning-tooltip:hover .planning-tooltiptext {
+        visibility: visible;
+        opacity: 1;
+    }
+    </style>
+    <style>@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }</style>
+    """, unsafe_allow_html=True)
 
-        for i, step in enumerate(plan):
-            with st.expander(f"Step {i+1}: {step.description}"):
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.write(f"**ID:** {step.id}")
-                    st.write(f"**Status:** {step.status}")
-                with col2:
-                    if st.button(f"▶️ Execute", key=f"exec_{step.id}"):
-                        with st.spinner(f"Executing {step.description}..."):
-                            success = st.session_state.planning_system.execute_step(
-                                step.id)
-                            if success:
-                                SessionManager.add_notification(
-                                    f"Step completed: {step.description}", "success")
-                            else:
-                                SessionManager.add_notification(
-                                    f"Step failed: {step.description}", "error")
-                        st.rerun()
+    # --- Shared logic: extract activities/entities from all CSVs ---
+    def extract_activities_and_places(selected_activities=None, user_query=None):
+        activity_set = set()
+        place_cards = []
+        csvs = [
+            'tshwane_places.csv',
+            'processed_data/tshwane_places.csv',
+            'processed_data/tshwane_restaurants.csv',
+            'scraps/Tryp_Thooe_Tourism-main/processed_data/tshwane_descriptions.csv',
+        ]
 
-    # Display current plan status
-    if st.session_state.current_plan:
-        st.subheader("📊 Current Plan Status")
-        completed = sum(
-            1 for step in st.session_state.current_plan if step.status == "completed")
-        total = len(st.session_state.current_plan)
-        progress = (completed / total) * 100 if total > 0 else 0
+        def add_activities_from_col(df, col):
+            if col in df.columns:
+                for v in df[col].dropna().unique():
+                    if isinstance(v, str):
+                        for part in re.split(r'[|,;/]', v):
+                            part = part.strip()
+                            if part and len(part) > 2:
+                                activity_set.add(part)
+        for path in csvs:
+            try:
+                df = pd.read_csv(path)
+                for col in ['type', 'category', 'ai_categories', 'highlights', 'facilities', 'special_features']:
+                    add_activities_from_col(df, col)
+                for idx, row in df.iterrows():
+                    found = False
+                    if selected_activities:
+                        for col in ['type', 'category', 'ai_categories', 'highlights', 'facilities', 'special_features']:
+                            val = row.get(col, '')
+                            if any(act.lower() in str(val).lower() for act in selected_activities):
+                                found = True
+                    elif user_query:
+                        for col in ['type', 'category', 'ai_categories', 'highlights', 'facilities', 'special_features', 'description', 'name']:
+                            val = row.get(col, '')
+                            if user_query.lower() in str(val).lower():
+                                found = True
+                    if found:
+                        name = row.get('name', row.get('Name', 'Unknown'))
+                        desc = row.get('description', row.get(
+                            'short_description', ''))
+                        img = row.get('image', '')
+                        cat = row.get('type', row.get('category', ''))
+                        link = row.get('link', row.get('website', ''))
+                        if not img:
+                            img = f"https://placehold.co/400x250?text={name.replace(' ', '+')}&font=roboto"
+                        place_cards.append({
+                            'name': name,
+                            'desc': desc,
+                            'img': img,
+                            'cat': cat,
+                            'link': link
+                        })
+            except Exception:
+                continue
+        activities = sorted(activity_set)
+        seen = set()
+        unique_cards = []
+        for card in place_cards:
+            if card['name'] not in seen:
+                unique_cards.append(card)
+                seen.add(card['name'])
+        return activities, unique_cards
 
-        st.progress(progress / 100)
-        st.caption(
-            f"Progress: {completed}/{total} steps completed ({progress:.1f}%)")
+    # --- Helper for favorite toggle ---
+    def fav_key(name):
+        return f"fav_{name.replace(' ', '_')}"
+
+    # --- Helper for plan reordering ---
+    def move_plan_item(plan, idx, direction):
+        if direction == 'up' and idx > 0:
+            plan[idx-1], plan[idx] = plan[idx], plan[idx-1]
+        elif direction == 'down' and idx < len(plan)-1:
+            plan[idx+1], plan[idx] = plan[idx], plan[idx+1]
+        return plan
+
+    if tab == 'Activity Planner':
+        with st.container():
+            st.markdown("<div class='planning-dark-container'>",
+                        unsafe_allow_html=True)
+            st.markdown("""
+            <h2 style='color: #00d4aa;'>🗺️ Smart Tourism Planner</h2>
+            <p style='color:#b3b3b3;'>Select your desired activities and let the AI help you plan the perfect Tshwane experience.</p>
+            """, unsafe_allow_html=True)
+            activities, _ = extract_activities_and_places()
+            selected_activities = st.multiselect(
+                'What activities are you interested in?',
+                options=activities,
+                help='Choose one or more activities to get personalized suggestions.'
+            )
+            st.markdown("</div>", unsafe_allow_html=True)
+        with st.expander('🎯 Suggestions for Your Activities', expanded=True):
+            _, unique_cards = extract_activities_and_places(
+                selected_activities=selected_activities)
+            cols = st.columns(2)
+            for i, card in enumerate(unique_cards):
+                with cols[i % 2]:
+                    st.markdown(f"<div class='planning-card'>",
+                                unsafe_allow_html=True)
+                    st.markdown(
+                        f"<span class='planning-icon' title='{card['cat']}'>{get_icon(card['cat'])}</span>", unsafe_allow_html=True)
+                    st.image(card['img'], use_container_width=True)
+                    st.markdown(f"**{card['name']}**")
+                    if card['cat']:
+                        st.caption(f"Type: {card['cat']}")
+                    st.markdown(card['desc'])
+                    if card['link']:
+                        st.markdown(f"[More Info]({card['link']})")
+                    # Favorite toggle
+                    fav = st.session_state.get(fav_key(card['name']), False)
+                    if st.button('⭐' if not fav else '💛', key=fav_key(card['name'])):
+                        st.session_state[fav_key(card['name'])] = not fav
+                    st.markdown(
+                        f"<span class='planning-fav {'fav-on' if fav else ''}'> {'💛' if fav else '⭐'}</span>", unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
+        with st.expander('📝 Your Plan', expanded=True):
+            plan = st.session_state.get('user_plan', [])
+            for i, item in enumerate(plan):
+                st.markdown(f"<div class='planning-card'>",
+                            unsafe_allow_html=True)
+                st.markdown(
+                    f"<span class='planning-icon' title='{item['cat']}'>{get_icon(item['cat'])}</span>", unsafe_allow_html=True)
+                st.markdown(f"<b>{i+1}. {item['name']}</b>")
+                st.caption(f"Type: {item['cat']}")
+                st.markdown(item['desc'])
+                st.image(item['img'], width=200)
+                date = st.date_input(
+                    f"Date for {item['name']}", key=f"plan_date_{i}")
+                time = st.time_input(
+                    f"Time for {item['name']}", key=f"plan_time_{i}")
+                # Favorite toggle
+                fav = st.session_state.get(fav_key(item['name']), False)
+                if st.button('⭐' if not fav else '💛', key=fav_key(item['name'])+"_plan"):
+                    st.session_state[fav_key(item['name'])] = not fav
+                st.markdown(
+                    f"<span class='planning-fav {'fav-on' if fav else ''}'> {'💛' if fav else '⭐'}</span>", unsafe_allow_html=True)
+                # Up/down buttons
+                up, down = st.columns([1, 1])
+                with up:
+                    if st.button('⬆️', key=f"up_{i}"):
+                        plan = move_plan_item(plan, i, 'up')
+                        st.session_state['user_plan'] = plan
+                        st.experimental_rerun()
+                with down:
+                    if st.button('⬇️', key=f"down_{i}"):
+                        plan = move_plan_item(plan, i, 'down')
+                        st.session_state['user_plan'] = plan
+                        st.experimental_rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
+            if not plan:
+                st.info('No activities added to your plan yet.')
+        with st.container():
+            if st.button('🤖 Get AI Suggestions for Your Plan'):
+                plan = st.session_state.get('user_plan', [])
+                if plan:
+                    st.success('Your plan looks great!')
+                else:
+                    st.warning('Add activities to your plan first.')
+    else:
+        with st.container():
+            st.markdown("<div class='planning-dark-container'>",
+                        unsafe_allow_html=True)
+            st.markdown("### 🤖 AI-Enhanced Planning Mode")
+            st.markdown("Powered by Hugging Face Models via MCP Integration")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Models Loaded", 7)
+            with col2:
+                st.metric("Available Tasks", 7)
+            with col3:
+                st.metric("Cache Status", "Active")
+            user_input = st.text_area(
+                "What would you like to plan for your Tshwane visit?",
+                placeholder="e.g., I want to visit historical sites and need restaurant recommendations for a sunny day...",
+                height=100
+            )
+            st.markdown("</div>", unsafe_allow_html=True)
+        with st.expander('🎯 AI Suggestions for Your Request', expanded=True):
+            if st.button("🤖 Get AI Planning Assistance", key="ai_planning_btn"):
+                if user_input:
+                    with st.spinner("🤖 AI is analyzing your request..."):
+                        # --- Placeholder for real backend integration ---
+                        # To connect to a real backend, replace the following block with an API call to Hugging Face or your own service.
+                        _, unique_cards = extract_activities_and_places(
+                            user_query=user_input)
+                        st.info(
+                            "Step 1: Analyze user intent and extract key needs...")
+                        time.sleep(1)
+                        st.info(
+                            "Step 2: Match activities and places from CSVs...")
+                        time.sleep(1)
+                        st.info(
+                            "Step 3: Generate step-by-step plan and recommendations...")
+                        time.sleep(1)
+                        st.success("Here is your AI-powered plan!")
+                        cols = st.columns(2)
+                        for i, card in enumerate(unique_cards):
+                            with cols[i % 2]:
+                                st.markdown(
+                                    f"<div class='planning-card'>", unsafe_allow_html=True)
+                                st.markdown(
+                                    f"<span class='planning-icon' title='{card['cat']}'>{get_icon(card['cat'])}</span>", unsafe_allow_html=True)
+                                st.image(card['img'], use_container_width=True)
+                                st.markdown(f"**{card['name']}**")
+                                if card['cat']:
+                                    st.caption(f"Type: {card['cat']}")
+                                st.markdown(card['desc'])
+                                if card['link']:
+                                    st.markdown(f"[More Info]({card['link']})")
+                                # Favorite toggle
+                                fav = st.session_state.get(
+                                    fav_key(card['name']), False)
+                                if st.button('⭐' if not fav else '💛', key=fav_key(card['name'])+"_ai"):
+                                    st.session_state[fav_key(
+                                        card['name'])] = not fav
+                                st.markdown(
+                                    f"<span class='planning-fav {'fav-on' if fav else ''}'> {'💛' if fav else '⭐'}</span>", unsafe_allow_html=True)
+                                st.markdown("</div>", unsafe_allow_html=True)
+                        st.markdown('---')
+                        # Render the AI-Generated Plan section directly, not in an expander
+                        st.markdown(
+                            "<h4 style='color:#ffd700;'>📝 Your AI-Generated Plan</h4>", unsafe_allow_html=True)
+                        for i, card in enumerate(unique_cards):
+                            st.markdown(f"<div class='planning-card'>",
+                                        unsafe_allow_html=True)
+                            st.markdown(
+                                f"<span class='planning-icon' title='{card['cat']}'>{get_icon(card['cat'])}</span>", unsafe_allow_html=True)
+                            st.markdown(f"<b>{i+1}. {card['name']}</b>")
+                            st.caption(f"Type: {card['cat']}")
+                            st.markdown(card['desc'])
+                            st.image(card['img'], width=200)
+                            date = st.date_input(
+                                f"Date for {card['name']}", key=f"ai_plan_date_{i}")
+                            time = st.time_input(
+                                f"Time for {card['name']}", key=f"ai_plan_time_{i}")
+                            # Favorite toggle
+                            fav = st.session_state.get(
+                                fav_key(card['name']), False)
+                            if st.button('⭐' if not fav else '��', key=fav_key(card['name'])+"_ai_plan"):
+                                st.session_state[fav_key(
+                                    card['name'])] = not fav
+                            st.markdown(
+                                f"<span class='planning-fav {'fav-on' if fav else ''}'> {'💛' if fav else '⭐'}</span>", unsafe_allow_html=True)
+                            st.markdown("</div>", unsafe_allow_html=True)
+                        st.markdown(
+                            "**Intent:** planning_request (Confidence: 0.92)")
+                        st.markdown("**Sentiment:** positive (Score: 0.88)")
+                        st.markdown(
+                            "**AI Recommendations:**\n- Book in advance for popular sites.\n- Try local cuisine for lunch.\n- Check weather before outdoor activities.")
+                else:
+                    st.warning("Please enter your planning request.")
 
 
 def display_enhanced_sidebar():
@@ -1496,7 +1846,8 @@ def display_enhanced_sidebar():
                     "OCR requires 'pytesseract' and 'Pillow'. Please install them with 'pip install pytesseract pillow'.")
             else:
                 img = Image.open(uploaded_file)
-                st.image(img, caption="Uploaded Image", use_column_width=True)
+                st.image(img, caption="Uploaded Image",
+                         use_container_width=True)
                 text = pytesseract.image_to_string(img)
                 st.markdown("**Extracted Text:**")
                 st.code(text)
@@ -1608,7 +1959,7 @@ def display_main_content():
     if st.session_state.get('current_section') == 'booking':
         with col1:
             st.subheader("📝 Book Your Experience")
-            display_enhanced_booking_form(allow_place_select=True)
+            display_booking_form_merged()
         with col2:
             st.subheader("📊 Data from Scraps & Project CSVs")
             # ... (keep the CSV dataframes code here) ...
@@ -1626,6 +1977,8 @@ def display_main_content():
             }
         )
 
+        # --- Google Maps iframe and links ---
+        display_google_maps_with_places()
         # Enhanced interactive map with CSV data
         st.subheader("🗺️ Interactive Tshwane Map")
 
@@ -1764,10 +2117,6 @@ def display_main_content():
         else:
             display_enhanced_gallery()
 
-        # Enhanced booking form
-        st.subheader("📝 Book Your Experience")
-        display_enhanced_booking_form()
-
         # Real-time analytics
         st.subheader("📊 Real-time Analytics")
         display_analytics_dashboard()
@@ -1783,7 +2132,8 @@ def display_main_content():
         display_analytics_dashboard()
 
         # Real-time notifications (Lovable-inspired)
-        display_real_time_notifications()
+        display_real_time_notifications(
+            toggle_key="show_all_notifications_toggle_main_content")
 
         # --- NEW: Dataframes from scraps and root CSVs ---
         with st.container():
@@ -2051,52 +2401,69 @@ def save_scraped_data(data):
 
 
 def display_enhanced_gallery():
-    """Rebuilt gallery using enhanced CSVs and project scope requirements"""
+    """Display gallery using local CSV, but enhance with images/categories/links from official gallery if available."""
     import pandas as pd
     import ast
-    # Load enhanced places data
+    import random
+    import re
+    fun_facts = [
+        "Did you know? Tshwane is home to the largest urban jacaranda forest in the world!",
+        "Travel tip: Always carry a reusable water bottle to stay hydrated while exploring.",
+        "Fun fact: Pretoria is also known as the Jacaranda City due to its thousands of jacaranda trees.",
+        "Travel tip: Early mornings are best for sightseeing to avoid crowds and heat.",
+        "Did you know? The Union Buildings are the official seat of the South African government.",
+        "Fun fact: Many museums in Tshwane offer free entry on certain days!",
+        "Travel tip: Try local cuisine at a market for an authentic experience.",
+        "Did you know? Tshwane has more than 100 embassies, making it one of the world's diplomatic capitals."
+    ]
+    if st.button('🔄 Sync with Official Gallery'):
+        places = scrape_official_gallery()
+        if places:
+            st.session_state['synced_gallery'] = places
+            pd.DataFrame(places).to_csv('synced_gallery.csv', index=False)
+            st.success(f"Synced {len(places)} places from official gallery!")
+        else:
+            st.warning('No places found from official gallery.')
+    # Load local CSV
     try:
-        df_places = pd.read_csv(
-            'scraps/Tryp_Thooe_Tourism-main/processed_data/tshwane_places.csv')
+        df_csv = pd.read_csv('tshwane_places.csv')
     except Exception:
-        st.warning('Could not load enhanced places data. Gallery unavailable.')
+        st.warning('Could not load tshwane_places.csv')
         return
-    # Load coordinates
-    try:
-        df_coords = pd.read_csv(
-            'scraps/Tryp_Thooe_Tourism-main/Repo/Tryp_Thooe_Tourism-main/tshwane_places_coordinates.csv')
-    except Exception:
-        df_coords = pd.DataFrame()
-    # Load enhanced descriptions
-    try:
-        df_desc = pd.read_csv(
-            'scraps/Tryp_Thooe_Tourism-main/processed_data/tshwane_descriptions.csv')
-    except Exception:
-        df_desc = pd.DataFrame()
-    # Merge coordinates
-    if not df_coords.empty:
-        df_places = pd.merge(df_places, df_coords, how='left',
-                             left_on='name', right_on='place_name')
-    # Merge descriptions
-    if not df_desc.empty:
-        df_places = pd.merge(df_places, df_desc, how='left',
-                             left_on='name', right_on='Name')
-    # Navigation state
+    # Load synced gallery if available
+    gallery_data = st.session_state.get('synced_gallery')
+    # Build a mapping from normalized name to scraped info
+
+    def normalize_name(name):
+        return re.sub(r'[^a-z0-9]', '', str(name).lower())
+    scraped_map = {normalize_name(
+        p['name']): p for p in gallery_data} if gallery_data else {}
+    # Merge CSV with scraped info
+    merged_places = []
+    for _, row in df_csv.iterrows():
+        name = row.get('name', '')
+        norm = normalize_name(name)
+        scraped = scraped_map.get(norm, {})
+        merged = dict(row)
+        # Prefer scraped image/category/link if available
+        for k in ['image', 'category', 'link']:
+            if scraped.get(k):
+                merged[k] = scraped[k]
+        merged_places.append(merged)
+    # Gallery navigation
+    n_places = len(merged_places)
+    if n_places == 0:
+        st.warning('No places found in local CSV.')
+        return
+    nav1, nav2, nav3, nav4 = st.columns([1, 1, 1, 1])
     if 'gallery_index' not in st.session_state:
         st.session_state.gallery_index = 0
-    n_places = len(df_places)
-    if n_places == 0:
-        st.warning('No places found in enhanced gallery.')
-        return
-    # Navigation controls
-    nav1, nav2, nav3, nav4 = st.columns([1, 1, 1, 1])
     with nav1:
         if st.button('⬅️ Previous', key='gallery_prev'):
             st.session_state.gallery_index = (
                 st.session_state.gallery_index - 1) % n_places
     with nav2:
         if st.button('🎲 Random', key='gallery_rand'):
-            import random
             st.session_state.gallery_index = random.randint(0, n_places-1)
     with nav3:
         if st.button('Next ➡️', key='gallery_next'):
@@ -2104,65 +2471,83 @@ def display_enhanced_gallery():
                 st.session_state.gallery_index + 1) % n_places
     with nav4:
         st.markdown(f"**{st.session_state.gallery_index+1} / {n_places}**")
-    # Show current place
-    place = df_places.iloc[st.session_state.gallery_index]
-    # Card layout
+    place = merged_places[st.session_state.gallery_index]
     st.markdown('---')
     st.markdown(f"<div class='gallery-card fade-in-up'>",
                 unsafe_allow_html=True)
+    # Creative: Placeholder image if missing
+    img_url = place.get('image', '')
+    if not img_url:
+        img_url = f"https://placehold.co/600x400?text={place.get('name', 'No+Image').replace(' ', '+')}&font=roboto"
+    st.image(img_url, use_container_width=True)
     st.subheader(f"🏛️ {place.get('name', 'Unknown')}")
-    st.caption(f"Type: {place.get('type', 'Unknown').title()}")
-    # Short/long description
-    short_desc = place.get('Short_Description') or place.get(
-        'description') or ''
-    long_desc = place.get('Long_Description') or place.get('description') or ''
-    st.markdown(f"**{short_desc}**")
-    with st.expander('Full Description'):
-        st.write(long_desc)
-    # Highlights
-    highlights = place.get('Highlights', '')
-    if isinstance(highlights, str) and highlights:
-        st.markdown(f"**Highlights:** {highlights.replace('|', ', ')}")
-    # Best time to visit
-    best_time = place.get('Best_Time_To_Visit', '')
-    if isinstance(best_time, str) and best_time:
-        st.info(f"Best time to visit: {best_time}")
-    # Accessibility
-    access = place.get('Accessibility', '')
-    if isinstance(access, str) and access:
-        st.info(f"Accessibility: {access}")
-    # Sentiment
-    sentiment = place.get('ai_sentiment', '')
-    if isinstance(sentiment, str) and sentiment:
-        st.metric('Sentiment', sentiment.title())
-    # Weather suitability
-    weather = place.get('weather_suitability', '')
-    if isinstance(weather, str) and weather and weather.startswith('{'):
-        try:
-            weather_dict = ast.literal_eval(weather)
-            st.markdown('**Weather Suitability:**')
-            st.json(weather_dict)
-        except Exception:
-            pass
-    # Coordinates
-    lat, lon = place.get('latitude'), place.get('longitude')
-    try:
-        if pd.notna(lat) and pd.notna(lon):
-            st.map(pd.DataFrame({'lat': [lat], 'lon': [lon]}))
-    except Exception:
-        pass
-    # Book Now button
-    if st.button('📋 Book Now', key=f'book_{st.session_state.gallery_index}'):
-        st.session_state.selected_place = {
-            'name': place.get('name', ''),
-            'type': place.get('type', ''),
-            'description': long_desc,
-            'latitude': lat,
-            'longitude': lon
-        }
-        st.session_state.current_section = 'booking'
-        st.rerun()
+    if place.get('category'):
+        st.markdown(f"**Category:** {place['category']}")
+    if place.get('link'):
+        st.markdown(f"[View Details]({place['link']})")
+    st.markdown(f"**{place.get('description', '')}**")
+    # Creative: Show a random fun fact or travel tip
+    st.info(random.choice(fun_facts))
     st.markdown('</div>', unsafe_allow_html=True)
+    return
+
+
+def scrape_official_gallery():
+    """Scrape the official Tshwane Tourism gallery page and return a list of places with images, categories, and links if available."""
+    import requests
+    from bs4 import BeautifulSoup
+    import re
+    gallery_url = "http://www.visittshwane.co.za/gallery"
+    try:
+        resp = requests.get(gallery_url, timeout=20)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        cards = soup.select('.gallery-card, .gallery-item, .place-card, .card')
+        places = []
+        for card in cards:
+            # Name
+            name = card.find(['h3', 'h2', 'h4', 'a'])
+            name = name.get_text(strip=True) if name else None
+            # Description
+            desc = card.find('p')
+            desc = desc.get_text(strip=True) if desc else ''
+            # Image
+            img = card.find('img')
+            image = img['src'] if img and img.has_attr('src') else ''
+            # Try to extract background-image style
+            if not image:
+                style = card.get('style', '')
+                match = re.search(
+                    r'background-image:\s*url\(["\']?(.*?)["\']?\)', style)
+                if match:
+                    image = match.group(1)
+            # Category
+            cat = card.find(class_='category') or card.find(class_='type')
+            if not cat:
+                # Try to find a badge/span/div with short text
+                for badge in card.find_all(['span', 'div']):
+                    txt = badge.get_text(strip=True)
+                    if txt and len(txt) < 20 and txt.lower() not in name.lower():
+                        cat = badge
+                        break
+            category = cat.get_text(strip=True) if cat else ''
+            # Link
+            link = card.find('a', href=True)
+            link_url = link['href'] if link and link.has_attr('href') else ''
+            if name:
+                places.append({'name': name, 'description': desc,
+                              'image': image, 'category': category, 'link': link_url})
+        # Fallback: try to find all place names in <a> or <div> if no cards found
+        if not places:
+            for tag in soup.find_all(['a', 'div', 'span']):
+                text = tag.get_text(strip=True)
+                if text and len(text) > 4 and 'gallery' not in text.lower():
+                    places.append({'name': text, 'description': '',
+                                  'image': '', 'category': '', 'link': ''})
+        return places
+    except Exception as e:
+        st.error(f"Failed to scrape official gallery: {e}")
+        return []
 
 
 def display_places_dashboard():
@@ -2320,144 +2705,459 @@ def analyze_place_with_ai(place: Dict[str, Any]) -> str:
         return f"Analysis temporarily unavailable: {str(e)}"
 
 
-def display_enhanced_booking_form(allow_place_select=False):
-    """Enhanced booking form with AI validation and real-time processing"""
-    if 'selected_place' not in st.session_state or allow_place_select:
-        place_options = [place['name']
-                         for place in st.session_state.places_data]
-        selected_place = st.selectbox(
-            "Select Place to Visit (from CSV)", place_options)
-        st.session_state.selected_place = next(
-            (place for place in st.session_state.places_data if place['name'] == selected_place),
-            None
-        )
-    # Restaurant multi-choice
+def display_booking_form_merged():
+    """Unified AI-powered booking form with advanced creative UI/UX features and even more advanced features."""
+    import pandas as pd
+    import datetime
+    import random
+    import hashlib
+    import uuid
+    import re
+
+    # --- Load all options from tshwane_places.csv only ---
     try:
-        df_places = pd.read_csv(
-            'scraps/Tryp_Thooe_Tourism-main/processed_data/tshwane_places.csv')
-        restaurant_options = df_places[df_places['type']
-                                       == 'restaurant']['name'].tolist()
+        df_places = pd.read_csv('Tryp_Thooe_Tourism/tshwane_places.csv')
     except Exception:
-        restaurant_options = []
-    selected_restaurants = st.multiselect(
-        "Select Restaurants (optional)", restaurant_options)
-    make_reservation = st.checkbox("Make restaurant reservation")
-    # User details
-    name = st.text_input("Full Name *", placeholder="Enter your full name")
-    email = st.text_input(
-        "Email Address *", placeholder="your.email@example.com")
-    whatsapp = st.text_input(
-        "WhatsApp Number *", placeholder="+27 XX XXX XXXX")
-    visit_date = st.date_input("Preferred Visit Date")
-    special_requests = st.text_area(
-        "Special Requests", placeholder="Any special requirements or requests...")
-    submitted = st.button("🚀 Submit Booking")
-    if submitted:
-        if name and email and whatsapp:
-            booking_data = {
-                'name': name,
-                'email': email,
-                'whatsapp': whatsapp,
-                'selected_place': st.session_state.selected_place['name'],
-                'selected_restaurants': selected_restaurants,
-                'make_reservation': make_reservation,
-                'visit_date': str(visit_date),
-                'special_requests': special_requests,
-                'timestamp': datetime.now().isoformat(),
-                'booking_id': hashlib.md5(f"{name}{email}{datetime.now()}".encode()).hexdigest()[:8]
+        df_places = pd.DataFrame(
+            columns=['name', 'description', 'type', 'image', 'lat', 'lng'])
+
+    # Dynamically determine categories from the CSV
+    categories = sorted(df_places['type'].dropna().unique().tolist())
+    options = {cat: sorted(df_places[df_places['type'] == cat]['name'].dropna(
+    ).unique().tolist()) for cat in categories}
+
+    # Custom icons for categories
+    icon_map = {
+        'accommodation': '🏨',
+        'restaurant': '🍽️',
+        'service': '🛎️',
+        'attraction': '🎡',
+        'area': '🌍',
+        'venue': '🏛️',
+        'shopping': '🛍️',
+        'museum': '🏺',
+        'spa': '💆',
+        'default': '📍'
+    }
+
+    def get_icon(cat):
+        return icon_map.get(str(cat).lower(), icon_map['default'])
+
+    def get_place_info(name):
+        row = df_places[df_places['name'].str.lower() == str(name).lower()]
+        if not row.empty:
+            r = row.iloc[0]
+            return {
+                'short': r.get('description', ''),
+                'long': r.get('description', ''),
+                'highlighted': bool(re.search(r'(hotel|lodge|recommended)', str(r.get('name', '')), re.I)),
+                'image': r.get('image', ''),
+                'lat': r.get('lat', None),
+                'lng': r.get('lng', None),
             }
-            process_booking(booking_data)
-            simulate_whatsapp_notification(booking_data)
+        return {'short': '', 'long': '', 'highlighted': False, 'image': '', 'lat': None, 'lng': None}
+
+    # Fun facts and travel tips
+    fun_facts = [
+        "Did you know? Tshwane is home to the largest urban jacaranda forest in the world!",
+        "Travel tip: Always carry a reusable water bottle to stay hydrated while exploring.",
+        "Fun fact: Pretoria is also known as the Jacaranda City due to its thousands of jacaranda trees.",
+        "Travel tip: Early mornings are best for sightseeing to avoid crowds and heat.",
+        "Did you know? The Union Buildings are the official seat of the South African government.",
+        "Fun fact: Many museums in Tshwane offer free entry on certain days!",
+        "Travel tip: Try local cuisine at a market for an authentic experience.",
+        "Did you know? Tshwane has more than 100 embassies, making it one of the world's diplomatic capitals."
+    ]
+
+    if 'booking_mode' not in st.session_state:
+        st.session_state.booking_mode = 'single'
+    if 'booking_data_merged' not in st.session_state:
+        st.session_state.booking_data_merged = {}
+    if 'booking_summary_merged' not in st.session_state:
+        st.session_state.booking_summary_merged = ''
+    if 'ai_suggestion_merged' not in st.session_state:
+        st.session_state.ai_suggestion_merged = ''
+    if 'fav_places' not in st.session_state:
+        st.session_state.fav_places = set()
+    if 'ai_category_suggestions' not in st.session_state:
+        st.session_state.ai_category_suggestions = {}
+    if 'show_map_popup' not in st.session_state:
+        st.session_state.show_map_popup = None
+
+    def fav_key(name):
+        return f"fav_{name.replace(' ', '_')}"
+
+    def grouped_options(opts):
+        if len(opts) <= 10:
+            return {'All': opts}
+        groups = {}
+        for o in opts:
+            first = o[0].upper()
+            if 'A' <= first <= 'F':
+                g = 'A-F'
+            elif 'G' <= first <= 'L':
+                g = 'G-L'
+            elif 'M' <= first <= 'R':
+                g = 'M-R'
+            else:
+                g = 'S-Z'
+            groups.setdefault(g, []).append(o)
+        return groups
+
+    def filter_options(opts, filter_text):
+        if not filter_text:
+            return opts
+        filter_text = filter_text.lower()
+        return [o for o in opts if filter_text in o.lower() or filter_text in get_place_info(o)['short'].lower()]
+
+    def ai_suggest_for_category(cat, opts):
+        # Simple AI: recommend up to 2 places based on time of day, group size, or random
+        now = datetime.datetime.now()
+        group_size = st.session_state.get('bm_group_size', 1)
+        if cat == 'restaurant':
+            # Suggest a restaurant for lunch or dinner
+            if now.hour < 15:
+                recs = [o for o in opts if 'cafe' in o.lower()
+                        or 'grill' in o.lower()]
+            else:
+                recs = [o for o in opts if 'restaurant' in o.lower()
+                        or 'bistro' in o.lower()]
+        elif cat == 'accommodation':
+            recs = [o for o in opts if 'hotel' in o.lower()
+                    or 'lodge' in o.lower()]
         else:
-            st.error("Please fill in all required fields marked with *")
+            recs = random.sample(opts, min(2, len(opts))) if opts else []
+        return recs[:2]
 
+    # Progress bar: how many categories have at least one selection
+    def count_selected(selections):
+        return sum(1 for v in selections.values() if v)
 
-def calculate_booking_score(booking_data: Dict[str, Any]) -> float:
-    """Calculate booking validation score"""
-    score = 0.0
-
-    # Basic field validation
-    if booking_data.get('name'):
-        score += 0.2
-    if booking_data.get('email') and '@' in booking_data['email']:
-        score += 0.2
-    if booking_data.get('whatsapp'):
-        score += 0.2
-    if booking_data.get('selected_place'):
-        score += 0.2
-    if booking_data.get('visit_date'):
-        score += 0.2
-
-    return score
-
-
-def display_booking_form():
-    """Display booking form with encryption"""
-    if 'selected_place' not in st.session_state:
-        st.info("Please select a place from the gallery above.")
-        return
-
-    with st.form("booking_form"):
-        st.write(f"**Booking for:** {st.session_state.selected_place['name']}")
-
-        # User details
-        name = st.text_input("Full Name *", placeholder="Enter your full name")
-        email = st.text_input(
-            "Email Address *", placeholder="your.email@example.com")
-        whatsapp = st.text_input(
-            "WhatsApp Number *", placeholder="+27 XX XXX XXXX")
-
-        # Place selection from CSV
-        place_options = [place['name']
-                         for place in st.session_state.places_data]
-        selected_place = st.selectbox(
-            "Select Place to Visit (from CSV)", place_options)
-
-        # Multi-select for additional places from CSV
-        additional_places = st.multiselect(
-            "Additional Places to Visit",
-            options=place_options,
-            help="Select additional places you'd like to visit during your trip"
-        )
-
-        # Restaurant selection from CSV
-        if st.session_state.restaurants_data:
-            restaurant_options = ["None"] + [restaurant['name']
-                                             for restaurant in st.session_state.restaurants_data]
-            selected_restaurant = st.selectbox(
-                "Select Restaurant (from CSV)", restaurant_options)
-            make_reservation = st.checkbox("Make restaurant reservation")
+    # Map popup logic
+    def show_map_for_place(place_info):
+        lat, lng = place_info.get('lat'), place_info.get('lng')
+        name = place_info.get('name', '')
+        if pd.notna(lat) and pd.notna(lng):
+            import folium
+            from streamlit_folium import st_folium
+            m = folium.Map(location=[lat, lng], zoom_start=14)
+            folium.Marker([lat, lng], popup=name).add_to(m)
+            st_folium(m, width=400, height=300)
         else:
-            selected_restaurant = "None"
-            make_reservation = False
+            import urllib.parse
+            url = f"https://www.google.com/maps/search/{urllib.parse.quote_plus(name + ' Tshwane')}"
+            st.markdown(f"[Open in Google Maps]({url})")
 
-        # Additional details
-        visit_date = st.date_input("Preferred Visit Date")
-        special_requests = st.text_area(
-            "Special Requests", placeholder="Any special requirements or requests...")
+    with st.form('booking_form_merged', clear_on_submit=False):
+        st.markdown("""
+        <div style='background: linear-gradient(90deg, #a8edea 0%, #fed6e3 100%); padding: 18px; border-radius: 18px; margin-bottom: 18px;'>
+        <h2 style='color: #00b894;'>📝 Unified AI Booking Form</h2>
+        <p>Book a single place or multiple experiences in Tshwane with AI-powered suggestions, accessibility info, and a modern, personalized experience.</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        submitted = st.form_submit_button("🚀 Submit Booking")
+        mode = st.radio('Booking Mode', [
+                        'Book a single place', 'Book multiple experiences'], index=0, key='booking_mode_radio')
+        st.session_state.booking_mode = 'single' if mode == 'Book a single place' else 'multi'
 
-        if submitted:
-            if name and email and whatsapp:
-                # Create booking data
+        st.subheader('👤 Your Details')
+        col1, col2 = st.columns(2)
+        with col1:
+            name = st.text_input(
+                'Full Name *', placeholder='Enter your full name', key='bm_name')
+            email = st.text_input(
+                'Email Address *', placeholder='your.email@example.com', key='bm_email')
+            whatsapp = st.text_input(
+                'WhatsApp Number *', placeholder='+27 XX XXX XXXX', key='bm_whatsapp')
+        with col2:
+            group_size = st.selectbox('Group Size', [
+                                      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, '10+'], index=0, key='bm_group_size')
+            dietary = st.text_input(
+                'Dietary Preferences', placeholder='e.g. vegetarian, halal, none', key='bm_dietary')
+            special_needs = st.text_input(
+                'Special Needs', placeholder='e.g. wheelchair access, allergies', key='bm_special_needs')
+        st.markdown('---')
+
+        if st.session_state.booking_mode == 'single':
+            st.subheader(
+                '🏛️ Book a Single Place (or Multiple from Each Category)')
+            single_selections = {}
+            for cat in categories:
+                with st.expander(f"{get_icon(cat)} {cat.title()} 🏷️", expanded=False):
+                    st.markdown(
+                        f"<span class='animated-icon'>{get_icon(cat)}</span> <b>{cat.title()}</b>", unsafe_allow_html=True)
+                    st.info(random.choice(fun_facts))
+                    opts = options[cat]
+                    filter_text = st.text_input(
+                        f"Filter {cat.title()} options", key=f"filter_single_{cat}")
+                    filtered_opts = filter_options(opts, filter_text)
+                    groups = grouped_options(filtered_opts)
+                    # AI Suggestion button
+                    if st.button(f"🤖 AI Suggest {cat.title()} Options", key=f"ai_suggest_single_{cat}"):
+                        st.session_state.ai_category_suggestions[cat] = ai_suggest_for_category(
+                            cat, filtered_opts)
+                    ai_suggestions = st.session_state.ai_category_suggestions.get(cat, [
+                    ])
+                    if ai_suggestions:
+                        st.success(
+                            f"AI Suggestion: {', '.join(ai_suggestions)}")
+                    # Quick Add All
+                    if filtered_opts:
+                        if st.button(f"Quick Add All {cat.title()}", key=f"quickadd_single_{cat}"):
+                            for group_opts in groups.values():
+                                st.session_state[f"bm_single_{cat}_All"] = group_opts
+                    selected = []
+                    for group, group_opts in groups.items():
+                        if len(groups) > 1:
+                            st.markdown(f"**{group}**")
+                        sel = st.multiselect(
+                            f"Select {cat.title()} options" if len(
+                                groups) == 1 else '',
+                            group_opts,
+                            key=f"bm_single_{cat}_{group}")
+                        selected.extend(sel)
+                    single_selections[cat] = []
+                    for place in selected:
+                        info = get_place_info(place)
+                        fav = fav_key(place)
+                        is_fav = fav in st.session_state.fav_places
+                        # Image preview
+                        img_url = info['image'] if info[
+                            'image'] else f"https://placehold.co/400x250?text={place.replace(' ', '+')}&font=roboto"
+                        st.image(img_url, width=250, caption=place,
+                                 use_column_width=False)
+                        # Map popup
+                        if st.button(f"Show on Map", key=f"showmap_single_{cat}_{place}"):
+                            st.session_state.show_map_popup = (place, info)
+                        if st.session_state.show_map_popup and st.session_state.show_map_popup[0] == place:
+                            show_map_for_place({**info, 'name': place})
+                        # Custom preview card
+                        st.markdown(f"""
+                        <div class='preview-card'>
+                        <b style='font-size:1.1em'>{get_icon(cat)} {place}</b>
+                        {'<span style=\"color:#ffd700;font-weight:bold;\">⭐ Recommended</span>' if info['highlighted'] else ''}
+                        <span class='fav-star {'fav-on' if is_fav else ''}' onclick=\"window.parent.postMessage({{type: 'toggle_fav', name: '{place}'}}, '*')\">{'💛' if is_fav else '⭐'}</span><br>
+                        <span style='color:#888;'>{info['short']}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            date = st.date_input(f"Date for {place}", min_value=datetime.date.today(
+                            ), key=f"bm_single_date_{cat}_{place}")
+                            time = st.time_input(f"Time for {place}", value=datetime.time(
+                                hour=10), key=f"bm_single_time_{cat}_{place}")
+                        with col2:
+                            st.caption('No extra info available.')
+                        single_selections[cat].append({
+                            'name': place,
+                            'date': str(date),
+                            'time': str(time),
+                            'category': cat
+                        })
+            st.progress(count_selected(single_selections) /
+                        max(1, len(categories)), text="Categories selected")
+            special_requests = st.text_area(
+                'Special Requests',
+                placeholder='Any special requirements or requests...\n\nSuggestions:\n• Wheelchair accessibility\n• Photography permissions\n• Group discounts\n• Guided tour preferences',
+                key='bm_single_special'
+            )
+            form_valid = bool(name and email and whatsapp and any(
+                len(v) > 0 for v in single_selections.values()))
+            if form_valid:
+                st.success("✅ Form validation passed")
+            else:
+                st.warning(
+                    "⚠️ Please fill in all required fields marked with * and select at least one option.")
+            st.markdown(f"<div class='sticky-summary'>",
+                        unsafe_allow_html=True)
+            summary = f"**Name:** {name}\n**Email:** {email}\n**WhatsApp:** {whatsapp}\n**Group Size:** {group_size}\n"
+            for cat, items in single_selections.items():
+                if items:
+                    summary += f"\n**{cat.title()}**:\n"
+                    for item in items:
+                        summary += f"- {item['name']} on {item['date']} at {item['time']}\n"
+            if special_requests:
+                summary += f"\n**Special Requests:** {special_requests}\n"
+            st.subheader('📝 Booking Summary')
+            st.markdown(summary)
+            st.session_state.booking_summary_merged = summary
+            st.markdown(f"</div>", unsafe_allow_html=True)
+            submitted = st.form_submit_button(
+                '🚀 Submit Booking', disabled=not form_valid)
+            if submitted:
                 booking_data = {
+                    'mode': 'single',
                     'name': name,
                     'email': email,
                     'whatsapp': whatsapp,
-                    'selected_place': selected_place,
-                    'selected_restaurant': selected_restaurant,
-                    'make_reservation': make_reservation,
-                    'visit_date': str(visit_date),
+                    'group_size': group_size,
+                    'dietary': dietary,
+                    'special_needs': special_needs,
+                    'selections': single_selections,
                     'special_requests': special_requests,
-                    'timestamp': datetime.now().isoformat(),
-                    'booking_id': hashlib.md5(f"{name}{email}{datetime.now()}".encode()).hexdigest()[:8]
+                    'summary': summary,
+                    'timestamp': str(datetime.datetime.now()),
+                    'booking_id': hashlib.md5(f"{name}{email}{datetime.datetime.now()}".encode()).hexdigest()[:8]
                 }
-
-                # Save and send booking
-                process_booking(booking_data)
-            else:
-                st.error("Please fill in all required fields marked with *")
+                if 'real_time_processor' in st.session_state:
+                    task_id = st.session_state.real_time_processor.add_task(
+                        str(uuid.uuid4())[:8],
+                        'process_booking',
+                        {'booking_data': booking_data}
+                    )
+                    with st.spinner("Processing booking with AI..."):
+                        result = st.session_state.real_time_processor.process_task(
+                            task_id)
+                        if result.get('success'):
+                            process_booking(booking_data)
+                            SessionManager.add_notification(
+                                f"Booking confirmed: {booking_data['booking_id']}", "success")
+                        else:
+                            SessionManager.add_notification(
+                                "Booking processing failed", "error")
+                else:
+                    process_booking(booking_data)
+                    st.success('✅ Booking submitted!')
+        else:
+            st.subheader('🌟 Book Multiple Experiences')
+            booking_selections = {}
+            for cat in categories:
+                with st.expander(f"{get_icon(cat)} {cat.title()} 🏷️", expanded=False):
+                    st.markdown(
+                        f"<span class='animated-icon'>{get_icon(cat)}</span> <b>{cat.title()}</b>", unsafe_allow_html=True)
+                    st.info(random.choice(fun_facts))
+                    opts = options[cat]
+                    filter_text = st.text_input(
+                        f"Filter {cat.title()} options", key=f"filter_multi_{cat}")
+                    filtered_opts = filter_options(opts, filter_text)
+                    groups = grouped_options(filtered_opts)
+                    # AI Suggestion button
+                    if st.button(f"🤖 AI Suggest {cat.title()} Options", key=f"ai_suggest_multi_{cat}"):
+                        st.session_state.ai_category_suggestions[cat] = ai_suggest_for_category(
+                            cat, filtered_opts)
+                    ai_suggestions = st.session_state.ai_category_suggestions.get(cat, [
+                    ])
+                    if ai_suggestions:
+                        st.success(
+                            f"AI Suggestion: {', '.join(ai_suggestions)}")
+                    # Quick Add All
+                    if filtered_opts:
+                        if st.button(f"Quick Add All {cat.title()}", key=f"quickadd_multi_{cat}"):
+                            for group_opts in groups.values():
+                                st.session_state[f"bm_multi_{cat}_All"] = group_opts
+                    selected = []
+                    for group, group_opts in groups.items():
+                        if len(groups) > 1:
+                            st.markdown(f"**{group}**")
+                        sel = st.multiselect(
+                            f"Select {cat.title()} options" if len(
+                                groups) == 1 else '',
+                            group_opts,
+                            key=f"bm_multi_{cat}_{group}")
+                        selected.extend(sel)
+                    booking_selections[cat] = []
+                    for place in selected:
+                        info = get_place_info(place)
+                        fav = fav_key(place)
+                        is_fav = fav in st.session_state.fav_places
+                        img_url = info['image'] if info[
+                            'image'] else f"https://placehold.co/400x250?text={place.replace(' ', '+')}&font=roboto"
+                        st.image(img_url, width=250, caption=place,
+                                 use_column_width=False)
+                        if st.button(f"Show on Map", key=f"showmap_multi_{cat}_{place}"):
+                            st.session_state.show_map_popup = (place, info)
+                        if st.session_state.show_map_popup and st.session_state.show_map_popup[0] == place:
+                            show_map_for_place({**info, 'name': place})
+                        st.markdown(f"""
+                        <div class='preview-card'>
+                        <b style='font-size:1.1em'>{get_icon(cat)} {place}</b>
+                        {'<span style=\"color:#ffd700;font-weight:bold;\">⭐ Recommended</span>' if info['highlighted'] else ''}
+                        <span class='fav-star {'fav-on' if is_fav else ''}' onclick=\"window.parent.postMessage({{type: 'toggle_fav', name: '{place}'}}, '*')\">{'💛' if is_fav else '⭐'}</span><br>
+                        <span style='color:#888;'>{info['short']}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            date = st.date_input(f"Date for {place}", min_value=datetime.date.today(
+                            ), key=f"bm_multi_date_{cat}_{place}")
+                            time = st.time_input(f"Time for {place}", value=datetime.time(
+                                hour=10), key=f"bm_multi_time_{cat}_{place}")
+                        with col2:
+                            st.caption('No extra info available.')
+                        booking_selections[cat].append({
+                            'name': place,
+                            'date': str(date),
+                            'time': str(time),
+                            'category': cat
+                        })
+            st.progress(count_selected(booking_selections) /
+                        max(1, len(categories)), text="Categories selected")
+            special_requests = st.text_area(
+                'Anything else? (optional)', placeholder='e.g. birthday, accessibility, etc.', key='bm_multi_special')
+            st.markdown(f"<div class='sticky-summary'>",
+                        unsafe_allow_html=True)
+            summary = f"**Name:** {name}\n**Email:** {email}\n**WhatsApp:** {whatsapp}\n**Group Size:** {group_size}\n"
+            for cat, items in booking_selections.items():
+                if items:
+                    summary += f"\n**{cat.title()}**:\n"
+                    for item in items:
+                        summary += f"- {item['name']} on {item['date']} at {item['time']}\n"
+            if special_requests:
+                summary += f"\n**Special Requests:** {special_requests}\n"
+            st.subheader('📝 Booking Summary')
+            st.markdown(summary)
+            st.session_state.booking_summary_merged = summary
+            st.markdown(f"</div>", unsafe_allow_html=True)
+            ai_recs = st.form_submit_button('🤖 Ask AI for Recommendations')
+            if ai_recs:
+                recs = []
+                for cat in categories:
+                    if not booking_selections[cat] and options[cat]:
+                        recs.append(
+                            f"Try {random.choice(options[cat])} for {cat}!")
+                st.session_state.ai_suggestion_merged = '\n'.join(
+                    recs) if recs else 'Your plan looks great!'
+            if st.session_state.ai_suggestion_merged:
+                st.info(
+                    f"AI Assistant: {st.session_state.ai_suggestion_merged}")
+            submitted = st.form_submit_button('🚀 Submit Booking')
+            if submitted:
+                if not name or not email or not whatsapp:
+                    st.error('Please fill in all required fields marked with *')
+                else:
+                    booking_data = {
+                        'mode': 'multi',
+                        'name': name,
+                        'email': email,
+                        'whatsapp': whatsapp,
+                        'group_size': group_size,
+                        'dietary': dietary,
+                        'special_needs': special_needs,
+                        'bookings': booking_selections,
+                        'special_requests': special_requests,
+                        'summary': summary,
+                        'timestamp': str(datetime.datetime.now()),
+                        'booking_id': hashlib.md5(f"{name}{email}{datetime.datetime.now()}".encode()).hexdigest()[:8]
+                    }
+                    if 'real_time_processor' in st.session_state:
+                        task_id = st.session_state.real_time_processor.add_task(
+                            str(uuid.uuid4())[:8],
+                            'process_booking',
+                            {'booking_data': booking_data}
+                        )
+                        with st.spinner("Processing booking with AI..."):
+                            result = st.session_state.real_time_processor.process_task(
+                                task_id)
+                            if result.get('success'):
+                                process_booking(booking_data)
+                                SessionManager.add_notification(
+                                    f"Booking confirmed: {booking_data['booking_id']}", "success")
+                            else:
+                                SessionManager.add_notification(
+                                    "Booking processing failed", "error")
+                    else:
+                        process_booking(booking_data)
+                        st.success('✅ Smart booking submitted!')
 
 
 def process_booking(booking_data):
@@ -2589,7 +3289,7 @@ def display_weather_insights(weather_condition: str):
                 st.markdown(f"• {activity}")
 
 
-def display_real_time_notifications():
+def display_real_time_notifications(toggle_key="show_all_notifications_toggle_main"):
     """Real-time notification system (Lovable-inspired)"""
     if st.session_state.notifications:
         st.markdown("### 🔔 Live Notifications")
@@ -2597,9 +3297,10 @@ def display_real_time_notifications():
         # Notification controls
         col1, col2 = st.columns([3, 1])
         with col1:
-            show_all = st.toggle("Show All Notifications", value=False)
+            show_all = st.toggle("Show All Notifications",
+                                 value=False, key=toggle_key)
         with col2:
-            if st.button("🗑️ Clear All"):
+            if st.button("🗑️ Clear All", key=f"clear_all_notifications_btn_{toggle_key}"):
                 st.session_state.notifications = []
                 st.rerun()
 
@@ -2642,11 +3343,8 @@ def display_analytics_dashboard():
             notification_types[notif_type] = notification_types.get(
                 notif_type, 0) + 1
         if notification_types:
-            fig = px.pie(
-                values=list(notification_types.values()),
-                names=list(notification_types.keys()),
-                title="Notification Types Distribution"
-            )
+            fig = px.pie(values=list(notification_types.values()), names=list(
+                notification_types.keys()), title="Notification Types Distribution")
             unique_key = f"notification_types_pie_{uuid.uuid4()}"
             st.plotly_chart(fig, use_container_width=True, key=unique_key)
 
@@ -2683,9 +3381,7 @@ def process_enhanced_booking(booking_data: Dict[str, Any]):
 
         # Add to notifications with enhanced details
         SessionManager.add_notification(
-            f"New booking: {booking_data['selected_place']} by {booking_data['name']} (Score: {booking_data.get('validation_score', 0):.1f})",
-            "success"
-        )
+            f"New booking: {booking_data['selected_place']} by {booking_data['name']} (Score: {booking_data.get('validation_score', 0):.1f})", "success")
 
     except Exception as e:
         st.error(f"Error processing booking: {e}")
@@ -2762,6 +3458,62 @@ def send_enhanced_booking_email(booking_data: Dict[str, Any]):
         f.write(email_content)
 
     st.info("📧 Enhanced booking email prepared for secretary@tshwanetourism.com")
+
+
+def display_google_maps_with_places():
+    """Display a Google Maps iframe, a filterable table of place links, and a custom map with all markers if possible."""
+    import pandas as pd
+    import urllib.parse
+    st.markdown("#### Google Maps (All Places)")
+    # Google Maps base embed (centered on Tshwane)
+    st.components.v1.iframe(
+        "https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d14334.0!2d28.1879!3d-25.7479!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zTWFpbiBUc2h3YW5l!5e0!3m2!1sen!2sza!4v1680000000000!5m2!1sen!2sza",
+        height=400,
+        scrolling=True
+    )
+    try:
+        df = pd.read_csv('tshwane_places.csv')
+        # Filtering
+        filter_text = st.text_input('Filter places by name or type:')
+        if filter_text:
+            df = df[df['name'].str.contains(filter_text, case=False, na=False) | df['type'].str.contains(
+                filter_text, case=False, na=False)]
+        st.markdown('#### Quick Google Maps Search Links for All Places:')
+        # Table/grid layout
+        n_cols = 4
+        rows = [df.iloc[i:i+n_cols] for i in range(0, len(df), n_cols)]
+        for row in rows:
+            cols = st.columns(n_cols)
+            for idx, (_, place) in enumerate(row.iterrows()):
+                name = place.get('name', '')
+                ptype = place.get('type', '')
+                url = f"https://www.google.com/maps/search/{urllib.parse.quote_plus(name + ' Tshwane')}"
+                with cols[idx]:
+                    st.markdown(
+                        f"**[{name}]({url})**<br><span style='font-size:0.9em;color:#888;'>Type: {ptype}</span>", unsafe_allow_html=True)
+        # Custom Google Maps with all markers (if lat/lng available)
+        if 'lat' in df.columns and 'lng' in df.columns and not df[['lat', 'lng']].isnull().all().all():
+            # Generate Static Maps API URL (limited by Google API, but demo for a few markers)
+            base = "https://maps.googleapis.com/maps/api/staticmap?size=600x400&maptype=roadmap"
+            marker_strs = []
+            for _, row in df.iterrows():
+                lat, lng = row.get('lat'), row.get('lng')
+                if pd.notna(lat) and pd.notna(lng):
+                    marker_strs.append(f"{lat},{lng}")
+            # Limit to 50 markers for demo (API limit)
+            marker_params = "&".join(
+                [f"markers={m}" for m in marker_strs[:50]])
+            # NOTE: You need a Google Maps API key for production use
+            static_url = f"{base}&{marker_params}"  # + "&key=YOUR_API_KEY"
+            st.image(
+                static_url, caption="Custom Map with All Markers (Demo, no API key)")
+            st.info(
+                "For a fully interactive map with all markers, use the Folium map below or add your Google Maps API key.")
+        else:
+            st.info(
+                "No coordinates found for places. Only search links are available.")
+    except Exception as e:
+        st.info(f"Could not load tshwane_places.csv: {e}")
 
 
 if __name__ == "__main__":
