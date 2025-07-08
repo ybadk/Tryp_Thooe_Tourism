@@ -618,7 +618,7 @@ def get_weather_options_from_csv():
 
 
 def create_tutorial_system():
-    """Create an interactive tutorial system"""
+    """Create a modern, context-aware interactive tutorial system for the Tshwane Tourism Portal."""
     if 'tutorial_step' not in st.session_state:
         st.session_state.tutorial_step = 0
         st.session_state.show_tutorial = False
@@ -626,43 +626,58 @@ def create_tutorial_system():
     tutorial_steps = [
         {
             'title': '🌿 Welcome to Tshwane Tourism Portal',
-            'content': 'This interactive portal helps you discover the beauty of Tshwane with AI-powered features. Let\'s take a quick tour!',
-            'action': 'Click "Next" to continue'
+            'content': 'Discover the beauty of Tshwane with our AI-powered tourism assistant. Plan, explore, and book your perfect trip—all in one place, with real data and smart features.',
+            'action': 'Click "Next" to begin your journey!'
         },
         {
-            'title': '🎯 Operation Modes',
-            'content': 'Choose between Planning Mode (for step-by-step guidance), Standard Mode (regular use), or Real-time Mode (live updates).',
-            'action': 'Try changing the mode in the top-right corner'
+            'title': '🎯 Choose Your Mode',
+            'content': 'Select your preferred mode: Planning (step-by-step guidance), Standard (regular use), or Real-Time (live updates). Each mode tailors the experience to your needs.',
+            'action': 'Try switching modes in the top-right corner.'
         },
         {
-            'title': '🌐 Load Tourism Data',
-            'content': 'Click "Smart Load Tourism Data" in the sidebar to load real data from the Tshwane Tourism website.',
-            'action': 'Look for the green button in the sidebar'
+            'title': '🌐 Load Real Tourism Data',
+            'content': 'Get the latest places, restaurants, and attractions by loading real data from the Tshwane Tourism website and CSVs. This powers all recommendations and maps.',
+            'action': 'Click "Load Data" in the sidebar.'
         },
         {
-            'title': '🔍 Semantic Search',
-            'content': 'Use the search box in the sidebar to find specific tourism content using AI-powered semantic search.',
-            'action': 'Try searching for "outdoor activities" or "museums"'
+            'title': '🔍 Smart Search & Navigation',
+            'content': 'Use the sidebar to search for activities, places, or restaurants. Navigation buttons let you jump to the gallery, booking, weather, analytics, and more.',
+            'action': 'Try searching for "museum" or "outdoor" in the sidebar.'
         },
         {
-            'title': '🏛️ Interactive Gallery',
-            'content': 'Browse through real places from Tshwane using the interactive gallery with navigation controls.',
-            'action': 'Use Previous/Next buttons or try the Random button'
+            'title': '🏛️ Explore the Interactive Gallery',
+            'content': 'Browse real places with images, categories, and links. Sync with the official gallery for the latest updates. Use Previous/Next/Random to explore.',
+            'action': 'Visit the Gallery and try the navigation buttons.'
         },
         {
-            'title': '🌤️ Weather Recommendations',
-            'content': 'Get AI-powered place recommendations based on current weather conditions.',
-            'action': 'Select a weather condition and click "Get AI Recommendations"'
+            'title': '🗺️ Discover on the Map',
+            'content': 'See all places and restaurants on an interactive map. Filter by type, view details, and use quick Google Maps links for directions.',
+            'action': 'Scroll to the map and try filtering or clicking a marker.'
         },
         {
-            'title': '📝 Smart Booking',
-            'content': 'Book your visit using the enhanced booking form with real-time validation and encryption.',
-            'action': 'Fill out the booking form to see validation in action'
+            'title': '🤖 Plan Your Trip with AI',
+            'content': 'Use the Activity Planner to select interests and get AI-powered suggestions. Add favorites, reorder your plan, and get step-by-step recommendations.',
+            'action': 'Open Planning Mode and select some activities.'
         },
         {
-            'title': '🎉 You\'re Ready!',
-            'content': 'You\'ve completed the tutorial! Explore all the features and enjoy discovering Tshwane.',
-            'action': 'Click "Finish" to start using the app'
+            'title': '📝 Book Your Experience',
+            'content': 'Book single or multiple places with a modern, validated form. Choose times, add special requests, and get instant AI feedback and confirmation.',
+            'action': 'Go to Booking Form and try booking a place.'
+        },
+        {
+            'title': '🌤️ Get AI Weather Recommendations',
+            'content': 'Let the AI suggest the best places to visit based on the weather. Use real data or simulate conditions for tailored recommendations.',
+            'action': 'Try the Weather Guide and get AI suggestions.'
+        },
+        {
+            'title': '📊 Track Progress & Notifications',
+            'content': 'See real-time notifications for bookings, updates, and system status. View analytics on places, activities, and your journey.',
+            'action': 'Check the sidebar and analytics dashboard.'
+        },
+        {
+            'title': "🎉 You're Ready!",
+            'content': "You've completed the tour! Explore, plan, and book with confidence. Need help? Restart the tutorial anytime from the sidebar.",
+            'action': 'Click "Finish" to start your adventure!'
         }
     ]
 
@@ -670,75 +685,73 @@ def create_tutorial_system():
 
 
 def display_tutorial():
-    """Display the tutorial overlay"""
+    """Display the tutorial as a Streamlit-native interactive container (no HTML/JS overlay)."""
     if st.session_state.get('show_tutorial', False):
         tutorial_steps = create_tutorial_system()
         current_step = st.session_state.get('tutorial_step', 0)
+        n_steps = len(tutorial_steps)
+        step = tutorial_steps[current_step] if current_step < n_steps else None
 
-        if current_step < len(tutorial_steps):
-            step = tutorial_steps[current_step]
-
-            # Tutorial overlay
-            st.markdown(f"""
-            <div class="tutorial-overlay" id="tutorial-overlay">
-                <div class="tutorial-content fade-in-up">
-                    <h2 style="color: var(--primary-green); margin-bottom: 16px;">
-                        Step {current_step + 1} of {len(tutorial_steps)}
-                    </h2>
-                    <h3 style="color: var(--text-primary); margin-bottom: 12px;">
-                        {step['title']}
-                    </h3>
-                    <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px;">
-                        {step['content']}
-                    </p>
-                    <p style="color: var(--primary-green); font-weight: 500; margin-bottom: 24px;">
-                        💡 {step['action']}
-                    </p>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="color: var(--text-muted); font-size: 0.9rem;">
-                            Progress: {current_step + 1}/{len(tutorial_steps)}
-                        </div>
-                        <div>
-                            <button onclick="skipTutorial()" style="
-                                background: var(--accent-bg);
-                                color: var(--text-secondary);
-                                border: 1px solid var(--border-color);
-                                border-radius: 8px;
-                                padding: 8px 16px;
-                                margin-right: 8px;
-                                cursor: pointer;
-                            ">Skip</button>
-                            <button onclick="nextTutorialStep()" style="
-                                background: var(--primary-green);
-                                color: var(--primary-bg);
-                                border: none;
-                                border-radius: 8px;
-                                padding: 8px 16px;
-                                cursor: pointer;
-                                font-weight: 500;
-                            ">
-                                {('Finish' if current_step == len(
-                tutorial_steps) - 1 else 'Next')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <script>
-                function nextTutorialStep() {{
-                    window.parent.postMessage({{
-                        type: 'tutorial_next'
-                    }}, '*');
-                }}
-
-                function skipTutorial() {{
-                    window.parent.postMessage({{
-                        type: 'tutorial_skip'
-                    }}, '*');
-                }}
-            </script>
+        with st.container():
+            st.markdown("""
+            <style>
+            .tutorial-native-container {
+                background: linear-gradient(135deg, #232a36 0%, #181c24 100%);
+                border-radius: 22px;
+                box-shadow: 0 8px 40px #00d4aa55;
+                padding: 38px 36px 28px 36px;
+                max-width: 480px;
+                margin: 32px auto 24px auto;
+                border: 2px solid #00d4aa44;
+                color: #fff;
+            }
+            .tutorial-native-container h2, .tutorial-native-container h3 {
+                color: #00d4aa;
+            }
+            .tutorial-native-progress {
+                width: 100%;
+                height: 8px;
+                background: #232a36;
+                border-radius: 6px;
+                margin-bottom: 18px;
+                overflow: hidden;
+            }
+            .tutorial-native-progress-bar {
+                height: 100%;
+                background: linear-gradient(90deg, #00d4aa 0%, #00b894 100%);
+                border-radius: 6px;
+                transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+            }
+            </style>
+            <div class='tutorial-native-container'>
             """, unsafe_allow_html=True)
+            progress_pct = int((current_step+1)/n_steps*100)
+            st.markdown(f"""
+            <div class='tutorial-native-progress'><div class='tutorial-native-progress-bar' style='width:{progress_pct}%;'></div></div>
+            <h2 style='margin-bottom: 16px;'>Step {current_step+1} of {n_steps}</h2>
+            <h3 style='margin-bottom: 12px;'>{step['title']}</h3>
+            <p style='color: #b3b3b3; line-height: 1.6; margin-bottom: 20px;'>{step['content']}</p>
+            <p style='color: #00d4aa; font-weight: 500; margin-bottom: 24px;'>💡 {step['action']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            # Navigation buttons
+            nav_cols = st.columns([1,1,1,1])
+            with nav_cols[0]:
+                if st.button('Back', key='tutorial_back_btn', disabled=current_step==0):
+                    if current_step > 0:
+                        st.session_state.tutorial_step = current_step - 1
+            with nav_cols[1]:
+                if st.button('Skip', key='tutorial_skip_btn'):
+                    st.session_state.show_tutorial = False
+                    st.session_state.tutorial_step = 0
+            with nav_cols[2]:
+                if st.button('Next', key='tutorial_next_btn', disabled=current_step==n_steps-1):
+                    if current_step < n_steps-1:
+                        st.session_state.tutorial_step = current_step + 1
+            with nav_cols[3]:
+                if st.button('Finish', key='tutorial_finish_btn', disabled=current_step!=n_steps-1):
+                    st.session_state.show_tutorial = False
+                    st.session_state.tutorial_step = 0
 
 
 def optimize_loading():
@@ -929,6 +942,9 @@ def get_weather_suggestions(weather_condition, places_data):
 
 def main():
     """Main application with enhanced AI capabilities"""
+
+    # Show tutorial overlay if requested
+    display_tutorial()
 
     # Enhanced Dark Theme CSS with optimized performance
     st.markdown("""
@@ -1582,12 +1598,12 @@ def display_planning_interface():
                     if st.button('⬆️', key=f"up_{i}"):
                         plan = move_plan_item(plan, i, 'up')
                         st.session_state['user_plan'] = plan
-                        st.experimental_rerun()
+                        st.rerun()
                 with down:
                     if st.button('⬇️', key=f"down_{i}"):
                         plan = move_plan_item(plan, i, 'down')
                         st.session_state['user_plan'] = plan
-                        st.experimental_rerun()
+                        st.rerun()
                 st.markdown("</div>", unsafe_allow_html=True)
             if not plan:
                 st.info('No activities added to your plan yet.')
@@ -1883,56 +1899,340 @@ def simulate_whatsapp_notification(booking_data):
 # 3. Enhanced booking form with restaurant multi-choice and reservation option
 
 
-def display_enhanced_booking_form(allow_place_select=False):
-    """Enhanced booking form with AI validation and real-time processing"""
-    if 'selected_place' not in st.session_state or allow_place_select:
-        place_options = [place['name']
-                         for place in st.session_state.places_data]
-        selected_place = st.selectbox(
-            "Select Place to Visit (from CSV)", place_options)
-        st.session_state.selected_place = next(
-            (place for place in st.session_state.places_data if place['name'] == selected_place),
-            None
-        )
-    # Restaurant multi-choice
-    try:
-        df_places = pd.read_csv(
-            'scraps/Tryp_Thooe_Tourism-main/processed_data/tshwane_places.csv')
-        restaurant_options = df_places[df_places['type']
-                                       == 'restaurant']['name'].tolist()
-    except Exception:
-        restaurant_options = []
-    selected_restaurants = st.multiselect(
-        "Select Restaurants (optional)", restaurant_options)
-    make_reservation = st.checkbox("Make restaurant reservation")
-    # User details
-    name = st.text_input("Full Name *", placeholder="Enter your full name")
-    email = st.text_input(
-        "Email Address *", placeholder="your.email@example.com")
-    whatsapp = st.text_input(
-        "WhatsApp Number *", placeholder="+27 XX XXX XXXX")
-    visit_date = st.date_input("Preferred Visit Date")
-    special_requests = st.text_area(
-        "Special Requests", placeholder="Any special requirements or requests...")
-    submitted = st.button("🚀 Submit Booking")
-    if submitted:
-        if name and email and whatsapp:
+def display_enhanced_booking_form():
+    """Enhanced booking form with AI validation and real-time processing, grouped by place type with time selection, now with a dark theme."""
+    import pandas as pd
+    import datetime
+    import hashlib
+    import uuid
+
+    if 'places_data' not in st.session_state or not st.session_state['places_data']:
+        st.info("No places data loaded.")
+        return
+
+    # --- Dark theme CSS for the form ---
+    st.markdown("""
+    <style>
+    .dark-booking-form {
+        background: linear-gradient(135deg, #181c24 0%, #232a36 100%);
+        border-radius: 18px;
+        box-shadow: 0 4px 24px #000a;
+        padding: 32px 28px 24px 28px;
+        margin-bottom: 22px;
+        border: 1.5px solid #00d4aa44;
+        color: #fff;
+        animation: fadeInUp 0.7s;
+    }
+    .dark-booking-form h2, .dark-booking-form h3, .dark-booking-form h4 {
+        color: #00d4aa;
+    }
+    .dark-booking-form label, .dark-booking-form .stTextInput > div > div > input,
+    .dark-booking-form .stTextArea > div > div > textarea,
+    .dark-booking-form .stSelectbox > div > div > select,
+    .dark-booking-form .stDateInput > div > div > input {
+        background: #232a36 !important;
+        color: #fff !important;
+        border: 1px solid #00d4aa44 !important;
+        border-radius: 8px !important;
+    }
+    .dark-booking-form .stTextInput > div > div > input:focus,
+    .dark-booking-form .stTextArea > div > div > textarea:focus,
+    .dark-booking-form .stSelectbox > div > div > select:focus {
+        border-color: #00d4aa !important;
+        box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.2) !important;
+    }
+    .dark-booking-form .stButton > button {
+        background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%) !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 12px !important;
+        font-weight: 600;
+        font-size: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 212, 170, 0.2);
+        margin-top: 12px;
+    }
+    .dark-booking-form .stButton > button:hover {
+        background: linear-gradient(135deg, #00b894 0%, #00a085 100%) !important;
+        color: #fff !important;
+    }
+    .dark-booking-form .st-expander {
+        background: #232a36 !important;
+        color: #fff !important;
+        border-radius: 12px !important;
+        border: 1px solid #00d4aa33 !important;
+    }
+    .dark-booking-form .st-expanderHeader {
+        color: #00d4aa !important;
+    }
+    .dark-booking-form .stAlert {
+        background: #232a36 !important;
+        color: #fff !important;
+        border-left: 4px solid #00d4aa !important;
+    }
+    .dark-booking-form .stProgress > div > div > div > div {
+        background: linear-gradient(90deg, #00d4aa 0%, #00b894 100%) !important;
+    }
+    .dark-booking-form .sticky-summary {
+        background: #181c24;
+        border-radius: 12px;
+        padding: 18px;
+        color: #fff;
+        border: 1px solid #00d4aa33;
+        margin-top: 18px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Extract all unique types from places_data
+    df_places = pd.DataFrame(st.session_state['places_data'])
+    types = sorted(df_places['type'].dropna().unique().tolist())
+    places_by_type = {
+        t: df_places[df_places['type'] == t]['name'].tolist() for t in types}
+
+    st.markdown('<div class="dark-booking-form">', unsafe_allow_html=True)
+    st.markdown("### 🎯 Smart Booking System")
+    with st.form("enhanced_booking_form", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            name = st.text_input(
+                "Full Name *", placeholder="Enter your full name")
+            email = st.text_input(
+                "Email Address *", placeholder="your.email@example.com")
+            whatsapp = st.text_input(
+                "WhatsApp Number *", placeholder="+27 XX XXX XXXX")
+        with col2:
+            visit_date = st.date_input(
+                "Preferred Visit Date", min_value=datetime.date.today())
+
+        st.markdown("---")
+        st.subheader("Select Places to Visit by Category")
+        selections = {}
+        times = {}
+        for t in types:
+            with st.expander(f"{t.title()} ({len(places_by_type[t])} places)", expanded=False):
+                selected = st.multiselect(
+                    f"Select {t.title()}s", places_by_type[t], key=f"sel_{t}")
+                selections[t] = selected
+                for place in selected:
+                    times[place] = st.time_input(f"Preferred time for {place}", value=datetime.time(
+                        10, 0), key=f"time_{t}_{place}")
+        st.markdown("---")
+        special_requests = st.text_area(
+            "Special Requests", placeholder="Any special requirements or requests...")
+        form_valid = bool(name and email and whatsapp and any(
+            selections[t] for t in types))
+        if form_valid:
+            st.success("✅ Form validation passed")
+        else:
+            st.warning(
+                "⚠️ Please fill in all required fields marked with * and select at least one place.")
+        submitted = st.form_submit_button(
+            "🚀 Submit Smart Booking", disabled=not form_valid)
+        if submitted and form_valid:
+            # Flatten selections into a list of dicts with type and time
+            selected_places = []
+            for t in types:
+                for place in selections[t]:
+                    selected_places.append({
+                        'name': place,
+                        'type': t,
+                        'time': str(times[place])
+                    })
             booking_data = {
                 'name': name,
                 'email': email,
                 'whatsapp': whatsapp,
-                'selected_place': st.session_state.selected_place['name'],
-                'selected_restaurants': selected_restaurants,
-                'make_reservation': make_reservation,
                 'visit_date': str(visit_date),
+                'selected_places': selected_places,
                 'special_requests': special_requests,
-                'timestamp': datetime.now().isoformat(),
-                'booking_id': hashlib.md5(f"{name}{email}{datetime.now()}".encode()).hexdigest()[:8]
+                'timestamp': datetime.datetime.now().isoformat(),
+                'booking_id': hashlib.md5(f"{name}{email}{datetime.datetime.now()}".encode()).hexdigest()[:8],
+                'ai_processed': True,
+                'validation_score': calculate_booking_score({'name': name, 'email': email, 'whatsapp': whatsapp, 'selected_place': selected_places[0]['name'] if selected_places else '', 'visit_date': str(visit_date)})
             }
-            process_booking(booking_data)
-            simulate_whatsapp_notification(booking_data)
+            task_id = st.session_state.real_time_processor.add_task(
+                str(uuid.uuid4())[:8],
+                'process_booking',
+                {'booking_data': booking_data}
+            )
+            with st.spinner("Processing booking with AI..."):
+                result = st.session_state.real_time_processor.process_task(
+                    task_id)
+                if result.get('success'):
+                    process_enhanced_booking(booking_data)
+                    SessionManager.add_notification(
+                        f"Booking confirmed: {result.get('booking_id')}", "success")
+                else:
+                    SessionManager.add_notification(
+                        "Booking processing failed", "error")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+def calculate_booking_score(booking_data):
+    score = 0.0
+    if booking_data.get('name'):
+        score += 0.2
+    if booking_data.get('email') and '@' in booking_data['email']:
+        score += 0.2
+    if booking_data.get('whatsapp'):
+        score += 0.2
+    # Accept either single or multi mode for place selection
+    if booking_data.get('mode') == 'single':
+        if any(len(v) > 0 for v in booking_data.get('selections', {}).values()):
+            score += 0.2
+    else:
+        if any(len(v) > 0 for v in booking_data.get('bookings', {}).values()):
+            score += 0.2
+    if booking_data.get('timestamp') or booking_data.get('visit_date'):
+        score += 0.2
+    return score
+
+
+def display_booking_form():
+    """Display booking form with encryption"""
+    if 'selected_place' not in st.session_state:
+        st.info("Please select a place from the gallery above.")
+        return
+
+    with st.form("booking_form"):
+        st.write(f"**Booking for:** {st.session_state.selected_place['name']}")
+
+        # User details
+        name = st.text_input("Full Name *", placeholder="Enter your full name")
+        email = st.text_input(
+            "Email Address *", placeholder="your.email@example.com")
+        whatsapp = st.text_input(
+            "WhatsApp Number *", placeholder="+27 XX XXX XXXX")
+
+        # Place selection from CSV
+        place_options = [place['name']
+                         for place in st.session_state.places_data]
+        selected_place = st.selectbox(
+            "Select Place to Visit (from CSV)", place_options)
+
+        # Multi-select for additional places from CSV
+        additional_places = st.multiselect(
+            "Additional Places to Visit",
+            options=place_options,
+            help="Select additional places you'd like to visit during your trip"
+        )
+
+        # Restaurant selection from CSV
+        if st.session_state.restaurants_data:
+            restaurant_options = ["None"] + [restaurant['name']
+                                             for restaurant in st.session_state.restaurants_data]
+            selected_restaurant = st.selectbox(
+                "Select Restaurant (from CSV)", restaurant_options)
+            make_reservation = st.checkbox("Make restaurant reservation")
         else:
-            st.error("Please fill in all required fields marked with *")
+            selected_restaurant = "None"
+            make_reservation = False
+
+        # Additional details
+        visit_date = st.date_input("Preferred Visit Date")
+        special_requests = st.text_area(
+            "Special Requests", placeholder="Any special requirements or requests...")
+
+        submitted = st.form_submit_button("🚀 Submit Booking")
+
+        if submitted:
+            if name and email and whatsapp:
+                # Create booking data
+                booking_data = {
+                    'name': name,
+                    'email': email,
+                    'whatsapp': whatsapp,
+                    'selected_place': selected_place,
+                    'selected_restaurant': selected_restaurant,
+                    'make_reservation': make_reservation,
+                    'visit_date': str(visit_date),
+                    'special_requests': special_requests,
+                    'timestamp': datetime.now().isoformat(),
+                    'booking_id': hashlib.md5(f"{name}{email}{datetime.now()}".encode()).hexdigest()[:8]
+                }
+
+                # Save and send booking
+                process_booking(booking_data)
+            else:
+                st.error("Please fill in all required fields marked with *")
+
+
+def process_booking(booking_data):
+    """Process booking with encryption and email sending"""
+    try:
+        # Generate encryption key
+        key = generate_key()
+
+        # Encrypt sensitive data
+        encrypted_data = encrypt_data(json.dumps(booking_data), key)
+
+        # Save to DataFrame
+        df = pd.DataFrame([booking_data])
+        df.to_csv(f"booking_{booking_data['booking_id']}.csv", index=False)
+
+        # Save encrypted version
+        with open(f"encrypted_booking_{booking_data['booking_id']}.txt", 'wb') as f:
+            f.write(encrypted_data)
+
+        # Save encryption key separately
+        with open(f"key_{booking_data['booking_id']}.key", 'wb') as f:
+            f.write(key)
+
+        # Send email (simulated)
+        send_booking_email(booking_data)
+
+        # Display confirmation
+        st.success(
+            f"✅ Booking submitted successfully! Booking ID: {booking_data['booking_id']}")
+
+        # Add to notifications
+        if 'notifications' not in st.session_state:
+            st.session_state.notifications = []
+
+        st.session_state.notifications.append({
+            'type': 'booking',
+            'message': f"New booking for {booking_data['selected_place']} by {booking_data['name']}",
+            'timestamp': datetime.now(),
+            'data': booking_data
+        })
+
+    except Exception as e:
+        st.error(f"Error processing booking: {e}")
+
+
+def send_booking_email(booking_data):
+    """Simulate sending email to secretary"""
+    # In a real implementation, you would use actual SMTP settings
+    email_content = f"""
+    New Tourism Booking Request
+    
+    Booking ID: {booking_data['booking_id']}
+    Client Name: {booking_data['name']}
+    Email: {booking_data['email']}
+    WhatsApp: {booking_data['whatsapp']}
+    
+    Selected Place: {booking_data['selected_place']}
+    Selected Restaurant: {booking_data['selected_restaurant']}
+    Restaurant Reservation: {'Yes' if booking_data['make_reservation'] else 'No'}
+    
+    Visit Date: {booking_data['visit_date']}
+    Special Requests: {booking_data['special_requests']}
+    
+    Submitted: {booking_data['timestamp']}
+    
+    ---
+    This booking was submitted through the Tshwane Tourism Interactive Portal
+    Created by Profit Projects Online Virtual Assistance
+    Enterprise Number: K2025200646
+    Contact: Thapelo Kgothatso Thooe
+    Email: kgothatsothooe@gmail.com
+    """
+
+    # Save email content to file
+    with open(f"email_booking_{booking_data['booking_id']}.txt", 'w') as f:
+        f.write(email_content)
+
+    st.info("📧 Booking details prepared for email to secretary@tshwanetourism.com")
 
 
 def load_tshwane_places_csv():
@@ -1959,7 +2259,7 @@ def display_main_content():
     if st.session_state.get('current_section') == 'booking':
         with col1:
             st.subheader("📝 Book Your Experience")
-            display_booking_form_merged()
+            display_enhanced_booking_form()
         with col2:
             st.subheader("📊 Data from Scraps & Project CSVs")
             # ... (keep the CSV dataframes code here) ...
@@ -2997,8 +3297,12 @@ def display_booking_form_merged():
                     'special_requests': special_requests,
                     'summary': summary,
                     'timestamp': str(datetime.datetime.now()),
-                    'booking_id': hashlib.md5(f"{name}{email}{datetime.datetime.now()}".encode()).hexdigest()[:8]
+                    'booking_id': hashlib.md5(f"{name}{email}{datetime.datetime.now()}".encode()).hexdigest()[:8],
+                    'ai_processed': True,
+                    'validation_score': None  # Will set below
                 }
+                booking_data['validation_score'] = calculate_booking_score(
+                    booking_data)
                 if 'real_time_processor' in st.session_state:
                     task_id = st.session_state.real_time_processor.add_task(
                         str(uuid.uuid4())[:8],
@@ -3137,8 +3441,12 @@ def display_booking_form_merged():
                         'special_requests': special_requests,
                         'summary': summary,
                         'timestamp': str(datetime.datetime.now()),
-                        'booking_id': hashlib.md5(f"{name}{email}{datetime.datetime.now()}".encode()).hexdigest()[:8]
+                        'booking_id': hashlib.md5(f"{name}{email}{datetime.datetime.now()}".encode()).hexdigest()[:8],
+                        'ai_processed': True,
+                        'validation_score': None  # Will set below
                     }
+                    booking_data['validation_score'] = calculate_booking_score(
+                        booking_data)
                     if 'real_time_processor' in st.session_state:
                         task_id = st.session_state.real_time_processor.add_task(
                             str(uuid.uuid4())[:8],
@@ -3514,6 +3822,26 @@ def display_google_maps_with_places():
                 "No coordinates found for places. Only search links are available.")
     except Exception as e:
         st.info(f"Could not load tshwane_places.csv: {e}")
+
+
+def calculate_booking_score(booking_data):
+    score = 0.0
+    if booking_data.get('name'):
+        score += 0.2
+    if booking_data.get('email') and '@' in booking_data['email']:
+        score += 0.2
+    if booking_data.get('whatsapp'):
+        score += 0.2
+    # Accept either single or multi mode for place selection
+    if booking_data.get('mode') == 'single':
+        if any(len(v) > 0 for v in booking_data.get('selections', {}).values()):
+            score += 0.2
+    else:
+        if any(len(v) > 0 for v in booking_data.get('bookings', {}).values()):
+            score += 0.2
+    if booking_data.get('timestamp') or booking_data.get('visit_date'):
+        score += 0.2
+    return score
 
 
 if __name__ == "__main__":
