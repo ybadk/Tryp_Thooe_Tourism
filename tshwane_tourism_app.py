@@ -1318,8 +1318,8 @@ def main():
     display_main_content()
 
     # Real-time notifications (Lovable-inspired)
-    display_real_time_notifications(
-        toggle_key="show_all_notifications_toggle_main")
+    # display_real_time_notifications(
+    #     toggle_key="show_all_notifications_toggle_main")
 
 
 def display_planning_interface():
@@ -1883,11 +1883,13 @@ def display_enhanced_sidebar():
         # Navigation links as dark-themed animated buttons (Streamlit-native, interactive)
         nav_links = [
             ("Places Gallery", "gallery", '🏛️'),
+            ("Individual Places", "individual_places", '📁'),
             ("Booking Form", "booking", '📝'),
             ("Weather Guide", "weather_guide", '🌤️'),
             ("Analytics", "analytics", '📊'),
             ("Contact Info", "contact", '📞'),
             ("AI Chat Assistant", "chat", '🤖'),
+            ("Email Secretary", "email_secretary", '📧'),
         ]
         st.markdown("<div style='margin-top:18px;'></div>",
                     unsafe_allow_html=True)
@@ -1902,6 +1904,38 @@ def display_enhanced_sidebar():
         st.metric("Places", len(st.session_state['places_data']), delta=None)
         st.metric("Notifications", len(
             st.session_state.get('notifications', [])), delta=None)
+
+        # Display contact info in sidebar when contact section is active
+        if st.session_state.get('current_section') == 'contact':
+            st.markdown("### 👥 Quick Team Info")
+            developers = load_developer_details()
+            if developers:
+                for dev in developers[:3]:  # Show first 3 developers in sidebar
+                    st.markdown(f"""
+                    **{dev['name']}**  
+                    {dev['role']}  
+                    📧 {dev['email']}
+                    """)
+                if len(developers) > 3:
+                    st.caption(
+                        f"... and {len(developers) - 3} more team members")
+
+        # Display secretary info in sidebar when email secretary section is active
+        if st.session_state.get('current_section') == 'email_secretary':
+            st.markdown("### 📧 Secretary Contact")
+            st.markdown("""
+            **Tshwane Tourism Association**  
+            📧 secretary@tshwanetourism.com  
+            📞 +27 12 XXX XXXX  
+            🏢 Main Office: Tshwane, South Africa
+            """)
+            st.markdown("### 💡 Quick Tips")
+            st.markdown("""
+            • Be specific about your inquiry
+            • Include relevant details
+            • Mention if urgent response needed
+            • Provide contact information
+            """)
 
         # 4. OCR Module (file upload + text extraction)
         st.markdown("### 🖼️ OCR Scan")
@@ -2324,9 +2358,371 @@ def load_tshwane_places_csv():
         return []
 
 
+def load_developer_details():
+    """Load developer details from CSV and return a list of dicts."""
+    import pandas as pd
+    try:
+        df = pd.read_csv('developer_details.csv')
+        return df.to_dict(orient='records')
+    except Exception as e:
+        st.warning(f"Could not load developer details: {e}")
+        return []
+
+
+def load_individual_place_data():
+    """Load individual place data from the processed CSV files"""
+    import pandas as pd
+    from pathlib import Path
+
+    individual_places = []
+
+    # Look for individual places data directory
+    data_dirs = [
+        "individual_places_data",
+        "processed_places_data",
+        "Tryp_Thooe_Tourism/individual_places_data",
+        "Tryp_Thooe_Tourism/processed_places_data"
+    ]
+
+    for data_dir in data_dirs:
+        if Path(data_dir).exists():
+            # Walk through all subdirectories
+            for subdir in Path(data_dir).iterdir():
+                if subdir.is_dir():
+                    for csv_file in subdir.glob("*.csv"):
+                        try:
+                            df = pd.read_csv(csv_file)
+                            if not df.empty:
+                                place_data = df.iloc[0].to_dict()
+                                place_data['category'] = subdir.name
+                                place_data['file_path'] = str(csv_file)
+                                individual_places.append(place_data)
+                        except Exception as e:
+                            st.warning(f"Could not load {csv_file}: {e}")
+
+    return individual_places
+
+
+def display_individual_places_gallery():
+    """Display individual places in a gallery format"""
+    individual_places = load_individual_place_data()
+
+    if not individual_places:
+        st.info("No individual place data found. Run the CSV data processor first.")
+        return
+
+    st.subheader("🏛️ Individual Places Gallery")
+    st.markdown(
+        f"*Showing {len(individual_places)} individual places with detailed information*")
+
+    # Filter options
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        # Get unique categories
+        categories = list(set(place.get('category', 'Unknown')
+                          for place in individual_places))
+        category_filter = st.multiselect(
+            "Filter by Category",
+            options=sorted(categories),
+            default=sorted(categories))
+
+    with col2:
+        sentiment_filter = st.selectbox(
+            "Filter by Sentiment",
+            options=["All", "positive", "neutral", "negative"])
+
+    with col3:
+        weather_filter = st.selectbox(
+            "Filter by Weather Suitability",
+            options=["All", "indoor", "outdoor", "all_weather"])
+
+    # Apply filters
+    filtered_places = individual_places
+    if category_filter:
+        filtered_places = [p for p in filtered_places if p.get(
+            'category') in category_filter]
+    if sentiment_filter != "All":
+        filtered_places = [p for p in filtered_places if p.get(
+            'ai_sentiment') == sentiment_filter]
+    if weather_filter != "All":
+        filtered_places = [p for p in filtered_places if p.get(
+            'weather_suitability') == weather_filter]
+
+    # Display places in a grid
+    cols = st.columns(2)
+    for i, place in enumerate(filtered_places):
+        with cols[i % 2]:
+            with st.container():
+                st.markdown(f"""
+                <div class="gallery-card">
+                    <h3>🏛️ {place.get('name', 'Unknown')}</h3>
+                    <p><strong>Category:</strong> {place.get('category', 'Unknown').title()}</p>
+                    <p><strong>Type:</strong> {place.get('type', 'Unknown')}</p>
+                    <p><strong>Sentiment:</strong> {place.get('ai_sentiment', 'neutral').title()}</p>
+                    <p><strong>Weather:</strong> {place.get('weather_suitability', 'Unknown')}</p>
+                    <p><strong>Price Range:</strong> {place.get('price_range', 'Unknown')}</p>
+                    <p>{place.get('description', 'No description available')[:200]}...</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # Show additional details in expander
+                with st.expander(f"📋 Details for {place.get('name', 'Unknown')}"):
+                    if place.get('address'):
+                        st.write(f"📍 **Address:** {place['address']}")
+                    if place.get('phone'):
+                        st.write(f"📞 **Phone:** {place['phone']}")
+                    if place.get('email'):
+                        st.write(f"📧 **Email:** {place['email']}")
+                    if place.get('website'):
+                        st.write(
+                            f"🌐 **Website:** [{place['website']}]({place['website']})")
+                    if place.get('opening_hours'):
+                        st.write(f"🕒 **Hours:** {place['opening_hours']}")
+                    if place.get('facilities'):
+                        st.write(f"🏢 **Facilities:** {place['facilities']}")
+                    if place.get('rating'):
+                        st.write(f"⭐ **Rating:** {place['rating']}")
+                    if place.get('latitude') and place.get('longitude'):
+                        st.write(
+                            f"🗺️ **Coordinates:** {place['latitude']}, {place['longitude']}")
+                    st.write(
+                        f"📁 **Source:** {place.get('file_path', 'Unknown')}")
+
+    # Summary statistics
+    st.markdown("---")
+    st.subheader("📊 Individual Places Statistics")
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Places", len(individual_places))
+    with col2:
+        verified_count = sum(
+            1 for p in individual_places if p.get('verified_source', False))
+        st.metric("Verified Places", verified_count)
+    with col3:
+        with_coords = sum(1 for p in individual_places if p.get(
+            'latitude') and p.get('longitude'))
+        st.metric("With Coordinates", with_coords)
+    with col4:
+        with_websites = sum(1 for p in individual_places if p.get('website'))
+        st.metric("With Websites", with_websites)
+
+
 # At startup, ensure places_data is loaded
 if 'places_data' not in st.session_state or not st.session_state['places_data']:
     st.session_state['places_data'] = load_tshwane_places_csv()
+
+
+def display_developer_contact_info():
+    """Display developer contact information in a professional format"""
+    developers = load_developer_details()
+
+    if not developers:
+        st.error("Could not load developer information.")
+        return
+
+    st.markdown("""
+    <style>
+    .developer-card {
+        background: linear-gradient(135deg, #232a36 0%, #181c24 100%);
+        border-radius: 16px;
+        padding: 20px;
+        margin: 12px 0;
+        border: 1px solid #00d4aa44;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s ease;
+    }
+    .developer-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 212, 170, 0.3);
+    }
+    .developer-name {
+        color: #00d4aa;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    .developer-role {
+        color: #b3b3b3;
+        font-size: 1rem;
+        margin-bottom: 12px;
+    }
+    .contact-info {
+        color: #ffffff;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    .skills-badge {
+        background: #00d4aa22;
+        color: #00d4aa;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        margin: 2px;
+        display: inline-block;
+    }
+    .experience-badge {
+        background: #ffd70022;
+        color: #ffd700;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        margin: 2px;
+        display: inline-block;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("### 👥 Development Team")
+    st.markdown(
+        "*Meet the talented team behind the Tshwane Tourism Interactive Portal*")
+
+    for developer in developers:
+        st.markdown(f"""
+        <div class="developer-card">
+            <div class="developer-name">👤 {developer['name']}</div>
+            <div class="developer-role">🎯 {developer['role']}</div>
+            <div class="contact-info">
+                📧 <a href="mailto:{developer['email']}" style="color: #00d4aa;">{developer['email']}</a><br>
+                📞 <a href="tel:{developer['phone']}" style="color: #00d4aa;">{developer['phone']}</a><br>
+                💼 <a href="https://{developer['linkedin']}" target="_blank" style="color: #00d4aa;">LinkedIn</a><br>
+                🐙 <a href="https://{developer['github']}" target="_blank" style="color: #00d4aa;">GitHub</a>
+            </div>
+            <div style="margin-top: 12px;">
+                <strong style="color: #ffffff;">Skills:</strong><br>
+                {', '.join([f'<span class="skills-badge">{skill.strip()}</span>' for skill in developer['skills'].split(',')])}
+            </div>
+            <div style="margin-top: 8px;">
+                <strong style="color: #ffffff;">Experience:</strong>
+                <span class="experience-badge">{developer['experience']}</span>
+            </div>
+            <div style="margin-top: 8px;">
+                <strong style="color: #ffffff;">Contribution:</strong><br>
+                <span style="color: #b3b3b3; font-size: 0.85rem;">{developer['contribution']}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #00d4aa22 0%, #00b89422 100%); 
+                border-radius: 12px; padding: 16px; border: 1px solid #00d4aa44;">
+        <h4 style="color: #00d4aa; margin-bottom: 8px;">🏢 Project Information</h4>
+        <p style="color: #ffffff; margin: 0;">
+            <strong>Enterprise:</strong> Profit Projects Online Virtual Assistance<br>
+            <strong>Registration:</strong> K2025200646<br>
+            <strong>Contact:</strong> kgothatsothooe@gmail.com<br>
+            <strong>Project:</strong> Tshwane Tourism Interactive Portal
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def display_email_secretary_form():
+    """Display email form to contact the secretary"""
+    st.markdown("### 📧 Contact Secretary")
+    st.markdown(
+        "*Send a direct message to the Tshwane Tourism Association secretary*")
+
+    with st.form("email_secretary_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            name = st.text_input(
+                "Your Name *", placeholder="Enter your full name")
+            email = st.text_input(
+                "Your Email *", placeholder="your.email@example.com")
+            phone = st.text_input(
+                "Phone Number", placeholder="+27 XX XXX XXXX")
+        with col2:
+            subject = st.selectbox("Subject *", [
+                "General Inquiry",
+                "Booking Request",
+                "Tourism Information",
+                "Partnership Opportunity",
+                "Feedback",
+                "Other"
+            ])
+            priority = st.selectbox(
+                "Priority", ["Low", "Medium", "High", "Urgent"])
+
+        message = st.text_area(
+            "Message *",
+            placeholder="Please describe your inquiry or request in detail...",
+            height=150
+        )
+
+        # Additional options
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            include_contact = st.checkbox(
+                "Include contact information", value=True)
+        with col2:
+            request_callback = st.checkbox("Request callback")
+        with col3:
+            urgent_matter = st.checkbox("Urgent matter")
+
+        submitted = st.form_submit_button("📧 Send Email to Secretary")
+
+        if submitted:
+            if name and email and message:
+                # Create email content
+                email_content = f"""
+                🌿 TSHWANE TOURISM ASSOCIATION - NEW INQUIRY
+                
+                ═══════════════════════════════════════════════════════════
+                📋 INQUIRY DETAILS
+                ═══════════════════════════════════════════════════════════
+                
+                📅 Submitted: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                📧 From: {name} ({email})
+                📞 Phone: {phone if phone else 'Not provided'}
+                🎯 Subject: {subject}
+                ⚡ Priority: {priority}
+                
+                ═══════════════════════════════════════════════════════════
+                💬 MESSAGE
+                ═══════════════════════════════════════════════════════════
+                
+                {message}
+                
+                ═══════════════════════════════════════════════════════════
+                📋 ADDITIONAL OPTIONS
+                ═══════════════════════════════════════════════════════════
+                
+                Include Contact Info: {'Yes' if include_contact else 'No'}
+                Request Callback: {'Yes' if request_callback else 'No'}
+                Urgent Matter: {'Yes' if urgent_matter else 'No'}
+                
+                ═══════════════════════════════════════════════════════════
+                📞 CONTACT & SUPPORT
+                ═══════════════════════════════════════════════════════════
+                
+                Created by: Profit Projects Online Virtual Assistance
+                Enterprise Number: K2025200646
+                Contact: Thapelo Kgothatso Thooe
+                Email: kgothatsothooe@gmail.com
+                
+                For inquiries: secretary@tshwanetourism.com
+                
+                ═══════════════════════════════════════════════════════════
+                """
+
+                # Save email content
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"secretary_email_{timestamp}.txt"
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write(email_content)
+
+                st.success(
+                    "✅ Email sent successfully to secretary@tshwanetourism.com")
+                st.info(f"📁 Email saved as: {filename}")
+
+                # Add to notifications
+                SessionManager.add_notification(
+                    f"Email sent to secretary by {name}", "success")
+
+            else:
+                st.error("Please fill in all required fields marked with *")
 
 
 def display_main_content():
@@ -2343,6 +2739,27 @@ def display_main_content():
             st.subheader("📊 Data from Scraps & Project CSVs")
             # ... (keep the CSV dataframes code here) ...
             pass
+        return
+
+    # Check if the user wants to see the contact info
+    if st.session_state.get('current_section') == 'contact':
+        with col1:
+            st.subheader("📞 Contact Information")
+            display_developer_contact_info()
+        with col2:
+            st.subheader("📊 Contact Analytics")
+            st.info("Contact information loaded from developer_details.csv")
+        return
+
+    # Check if the user wants to see the email secretary form
+    if st.session_state.get('current_section') == 'email_secretary':
+        with col1:
+            st.subheader("📧 Email Secretary")
+            display_email_secretary_form()
+        with col2:
+            st.subheader("📊 Email Analytics")
+            st.info(
+                "Email form for contacting the Tshwane Tourism Association secretary")
         return
 
     # Check if the user wants to see the chat interface
@@ -2514,8 +2931,8 @@ def display_main_content():
             display_enhanced_gallery()
 
         # Real-time analytics
-        st.subheader("📊 Real-time Analytics")
-        display_analytics_dashboard()
+        st.subheader("📊 Enhanced Real-time Analytics")
+        # display_enhanced_analytics_dashboard()
 
     with col2:
         # Weather-based suggestions with AI - Call outside of columns
@@ -2525,11 +2942,11 @@ def display_main_content():
 
         # Real-time analytics
         st.subheader("📊 Real-time Analytics")
-        display_analytics_dashboard()
+        # display_analytics_dashboard()
 
         # Real-time notifications (Lovable-inspired)
-        display_real_time_notifications(
-            toggle_key="show_all_notifications_toggle_main_content")
+        # display_real_time_notifications(
+        #     toggle_key="show_all_notifications_toggle_main_content")
 
         # --- NEW: Dataframes from scraps and root CSVs ---
         with st.container():
@@ -3616,115 +4033,7 @@ def send_booking_email(booking_data):
     st.info("📧 Booking details prepared for email to secretary@tshwanetourism.com")
 
 
-def display_ai_weather_suggestions():
-    """Compatibility wrapper for display_weather_content"""
-    display_weather_content()
-
-
-def display_weather_insights(weather_condition: str):
-    """Display weather-specific insights and tips"""
-    insights = {
-        'sunny': {
-            'icon': '☀️',
-            'tips': ['Bring sunscreen and water', 'Perfect for outdoor photography', 'Early morning visits recommended'],
-            'activities': ['Hiking', 'Garden tours', 'Outdoor monuments']
-        },
-        'rainy': {
-            'icon': '🌧️',
-            'tips': ['Bring an umbrella', 'Check indoor opening hours', 'Great for cozy experiences'],
-            'activities': ['Museum visits', 'Gallery tours', 'Shopping centers']
-        },
-        'cloudy': {
-            'icon': '☁️',
-            'tips': ['Perfect for photography', 'Comfortable walking weather', 'No harsh shadows'],
-            'activities': ['City walks', 'Historic tours', 'Market visits']
-        },
-        'hot': {
-            'icon': '🌡️',
-            'tips': ['Stay hydrated', 'Seek air-conditioned spaces', 'Avoid midday sun'],
-            'activities': ['Indoor attractions', 'Water features', 'Shaded areas']
-        },
-        'cold': {
-            'icon': '🥶',
-            'tips': ['Dress warmly', 'Enjoy hot beverages', 'Indoor activities preferred'],
-            'activities': ['Museums', 'Cafes', 'Indoor markets']
-        }
-    }
-
-    insight = insights.get(weather_condition.lower())
-    if insight:
-        st.markdown(f"### {insight['icon']} Weather Insights")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("**💡 Tips:**")
-            for tip in insight['tips']:
-                st.markdown(f"• {tip}")
-
-        with col2:
-            st.markdown("**🎯 Recommended Activities:**")
-            for activity in insight['activities']:
-                st.markdown(f"• {activity}")
-
-
-def display_real_time_notifications(toggle_key="show_all_notifications_toggle_main"):
-    """Real-time notification system (Lovable-inspired)"""
-    if st.session_state.notifications:
-        st.markdown("### 🔔 Live Notifications")
-
-        # Notification controls
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            show_all = st.toggle("Show All Notifications",
-                                 value=False, key=toggle_key)
-        with col2:
-            if st.button("🗑️ Clear All", key=f"clear_all_notifications_btn_{toggle_key}"):
-                st.session_state.notifications = []
-                st.rerun()
-
-        # Display notifications
-        notifications_to_show = st.session_state.notifications if show_all else st.session_state.notifications[-5:]
-
-        for notification in reversed(notifications_to_show):
-            # Use component system for consistent styling
-            st.session_state.component_system.render_component(
-                "notification_toast",
-                {
-                    "type": notification['type'],
-                    "message": f"{notification['message']} ({notification['timestamp'][:19]})"
-                }
-            )
-
-
-def display_analytics_dashboard():
-    """Real-time analytics dashboard"""
-    if not st.session_state.places_data and not st.session_state.restaurants_data:
-        st.info("Load data to see analytics")
-        return
-    # Basic analytics
-    total_places = len(st.session_state.places_data)
-    total_restaurants = len(st.session_state.restaurants_data)
-    total_notifications = len(st.session_state.notifications)
-    # Metrics display
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Places", total_places, delta=None)
-    with col2:
-        st.metric("Restaurants", total_restaurants, delta=None)
-    with col3:
-        st.metric("Notifications", total_notifications, delta=None)
-    # Activity chart
-    if st.session_state.notifications:
-        notification_types = {}
-        for notif in st.session_state.notifications:
-            notif_type = notif['type']
-            notification_types[notif_type] = notification_types.get(
-                notif_type, 0) + 1
-        if notification_types:
-            fig = px.pie(values=list(notification_types.values()), names=list(
-                notification_types.keys()), title="Notification Types Distribution")
-            unique_key = f"notification_types_pie_{uuid.uuid4()}"
-            st.plotly_chart(fig, use_container_width=True, key=unique_key)
+# Removed duplicate functions - keeping only the first instances
 
 
 def process_enhanced_booking(booking_data: Dict[str, Any]):
@@ -3894,24 +4203,7 @@ def display_google_maps_with_places():
         st.info(f"Could not load tshwane_places.csv: {e}")
 
 
-def calculate_booking_score(booking_data):
-    score = 0.0
-    if booking_data.get('name'):
-        score += 0.2
-    if booking_data.get('email') and '@' in booking_data['email']:
-        score += 0.2
-    if booking_data.get('whatsapp'):
-        score += 0.2
-    # Accept either single or multi mode for place selection
-    if booking_data.get('mode') == 'single':
-        if any(len(v) > 0 for v in booking_data.get('selections', {}).values()):
-            score += 0.2
-    else:
-        if any(len(v) > 0 for v in booking_data.get('bookings', {}).values()):
-            score += 0.2
-    if booking_data.get('timestamp') or booking_data.get('visit_date'):
-        score += 0.2
-    return score
+# Removed duplicate functions - they are already defined earlier in the file
 
 
 if __name__ == "__main__":

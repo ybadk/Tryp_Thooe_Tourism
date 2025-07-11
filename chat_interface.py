@@ -108,7 +108,7 @@ class TourismChatInterface:
                     df = pd.read_csv(csv_file)
                     self.tourism_data[csv_file] = df.to_dict('records')
                 except Exception as e:
-                    st.debug(f"Could not load {csv_file}: {e}")
+                    st.info(f"Could not load {csv_file}: {e}")
 
             # Load website data if available
             if hasattr(st.session_state, 'website_data'):
@@ -560,7 +560,7 @@ class TourismChatInterface:
                             st.success(f"✅ Connected to {url}")
                             break
                     except Exception as e:
-                        st.debug(f"Could not connect to {url}: {e}")
+                        st.info(f"Could not connect to {url}: {e}")
                         continue
 
                 if not st.session_state.chat_vector_store:
