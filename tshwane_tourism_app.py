@@ -1846,33 +1846,6 @@ def display_enhanced_sidebar():
         except Exception:
             st.info("No social links found.")
 
-        # Info Component
-        st.markdown("### ℹ️ System Information")
-        with st.expander("📋 About This Portal", expanded=False):
-            st.markdown("""
-            **🌿 Tshwane Tourism Portal**
-
-            **AI-Powered Features:**
-            • Real-time form validation
-            • AI-powered place analysis
-            • Encrypted data transmission
-            • Automated notification system
-
-            **📞 Contact & Support:**
-            • **Created by:** Profit Projects Online Virtual Assistance
-            • **Enterprise Number:** K2025200646
-            • **Contact:** Thapelo Kgothatso Thooe
-            • **Email:** kgothatsothooe@gmail.com
-            • **Booking Inquiries:** secretary@tshwanetourism.com
-
-            **🔧 System Capabilities:**
-            • Comprehensive tour planning
-            • Weather-based recommendations
-            • Real-time data processing
-            • Enhanced booking system
-            • AI-powered analytics
-            """)
-
         # Tutorial button
         if st.button("📚 Start Tutorial", key="tutorial_btn", help="Learn how to use the app"):
             st.session_state.show_tutorial = True
@@ -1911,7 +1884,6 @@ def display_enhanced_sidebar():
         nav_links = [
             ("Places Gallery", "gallery", '🏛️'),
             ("Booking Form", "booking", '📝'),
-            ("AI Tour Planner", "tour_planner", '🗺️'),
             ("Weather Guide", "weather_guide", '🌤️'),
             ("Analytics", "analytics", '📊'),
             ("Contact Info", "contact", '📞'),
@@ -2161,14 +2133,9 @@ def display_enhanced_booking_form():
                 result = st.session_state.real_time_processor.process_task(
                     task_id)
                 if result.get('success'):
-                    # Send email to both secretary and developer
-                    email_sent = send_booking_email_to_recipients(booking_data)
-                    if email_sent:
-                        SessionManager.add_notification(
-                            f"Booking confirmed and email sent: {result.get('booking_id')}", "success")
-                    else:
-                        SessionManager.add_notification(
-                            f"Booking confirmed: {result.get('booking_id')}", "success")
+                    process_enhanced_booking(booking_data)
+                    SessionManager.add_notification(
+                        f"Booking confirmed: {result.get('booking_id')}", "success")
                 else:
                     SessionManager.add_notification(
                         "Booking processing failed", "error")
@@ -2317,21 +2284,21 @@ def send_booking_email(booking_data):
     # In a real implementation, you would use actual SMTP settings
     email_content = f"""
     New Tourism Booking Request
-
+    
     Booking ID: {booking_data['booking_id']}
     Client Name: {booking_data['name']}
     Email: {booking_data['email']}
     WhatsApp: {booking_data['whatsapp']}
-
+    
     Selected Place: {booking_data['selected_place']}
     Selected Restaurant: {booking_data['selected_restaurant']}
     Restaurant Reservation: {'Yes' if booking_data['make_reservation'] else 'No'}
-
+    
     Visit Date: {booking_data['visit_date']}
     Special Requests: {booking_data['special_requests']}
-
+    
     Submitted: {booking_data['timestamp']}
-
+    
     ---
     This booking was submitted through the Tshwane Tourism Interactive Portal
     Created by Profit Projects Online Virtual Assistance
@@ -2376,17 +2343,6 @@ def display_main_content():
             st.subheader("📊 Data from Scraps & Project CSVs")
             # ... (keep the CSV dataframes code here) ...
             pass
-        return
-
-    # Check if the user wants to see the tour planner
-    if st.session_state.get('current_section') == 'tour_planner':
-        with col1:
-            st.subheader("🗺️ AI Tour Planner")
-            create_comprehensive_tour_planner()
-        with col2:
-            st.subheader("📊 Planning Analytics")
-            st.info(
-                "Tour planning analytics will appear here when you generate plans.")
         return
 
     # Check if the user wants to see the chat interface
@@ -3414,15 +3370,9 @@ def display_booking_form_merged():
                         result = st.session_state.real_time_processor.process_task(
                             task_id)
                         if result.get('success'):
-                            # Send email to both secretary and developer
-                            email_sent = send_booking_email_to_recipients(
-                                booking_data)
-                            if email_sent:
-                                SessionManager.add_notification(
-                                    f"Booking confirmed and email sent: {booking_data['booking_id']}", "success")
-                            else:
-                                SessionManager.add_notification(
-                                    f"Booking confirmed: {booking_data['booking_id']}", "success")
+                            process_booking(booking_data)
+                            SessionManager.add_notification(
+                                f"Booking confirmed: {booking_data['booking_id']}", "success")
                         else:
                             SessionManager.add_notification(
                                 "Booking processing failed", "error")
@@ -3572,18 +3522,12 @@ def display_booking_form_merged():
                             result = st.session_state.real_time_processor.process_task(
                                 task_id)
                             if result.get('success'):
-                                # Send email to both secretary and developer
-                                email_sent = send_booking_email_to_recipients(
-                                    booking_data)
-                            if email_sent:
-                                SessionManager.add_notification(
-                                    f"Booking confirmed and email sent: {booking_data['booking_id']}", "success")
-                            else:
+                                process_booking(booking_data)
                                 SessionManager.add_notification(
                                     f"Booking confirmed: {booking_data['booking_id']}", "success")
-                        else:
-                            SessionManager.add_notification(
-                                "Booking processing failed", "error")
+                            else:
+                                SessionManager.add_notification(
+                                    "Booking processing failed", "error")
 
                             # Ensure minimum 3-second loading time
                             elapsed_time = time.time() - start_time
@@ -3642,21 +3586,21 @@ def send_booking_email(booking_data):
     # In a real implementation, you would use actual SMTP settings
     email_content = f"""
     New Tourism Booking Request
-
+    
     Booking ID: {booking_data['booking_id']}
     Client Name: {booking_data['name']}
     Email: {booking_data['email']}
     WhatsApp: {booking_data['whatsapp']}
-
+    
     Selected Place: {booking_data['selected_place']}
     Selected Restaurant: {booking_data['selected_restaurant']}
     Restaurant Reservation: {'Yes' if booking_data['make_reservation'] else 'No'}
-
+    
     Visit Date: {booking_data['visit_date']}
     Special Requests: {booking_data['special_requests']}
-
+    
     Submitted: {booking_data['timestamp']}
-
+    
     ---
     This booking was submitted through the Tshwane Tourism Interactive Portal
     Created by Profit Projects Online Virtual Assistance
@@ -3670,141 +3614,6 @@ def send_booking_email(booking_data):
         f.write(email_content)
 
     st.info("📧 Booking details prepared for email to secretary@tshwanetourism.com")
-
-
-def send_booking_email_to_recipients(booking_data):
-    """Send booking email to both secretary and developer"""
-    try:
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.base import MIMEBase
-        from email import encoders
-        import os
-
-        # Email configuration
-        # You'll need to set up this email
-        sender_email = "tshwane.tourism.portal@gmail.com"
-        # Set this as environment variable
-        sender_password = os.getenv("EMAIL_PASSWORD", "")
-
-        # Recipients
-        secretary_email = "secretary@tshwanetourism.com"
-        developer_email = "kgothatsothooe@gmail.com"
-
-        # Create email content
-        subject = f"🌿 New Tourism Booking - {booking_data['booking_id']}"
-
-        email_content = f"""
-        🌿 TSHWANE TOURISM ASSOCIATION - NEW BOOKING REQUEST
-
-        ═══════════════════════════════════════════════════════════
-        📋 BOOKING DETAILS
-        ═══════════════════════════════════════════════════════════
-
-        🆔 Booking ID: {booking_data['booking_id']}
-        📅 Submitted: {booking_data['timestamp']}
-        🤖 AI Processed: {booking_data.get('ai_processed', False)}
-        ⭐ Validation Score: {booking_data.get('validation_score', 0):.1f}/1.0
-
-        ═══════════════════════════════════════════════════════════
-        👤 CLIENT INFORMATION
-        ═══════════════════════════════════════════════════════════
-
-        Name: {booking_data['name']}
-        Email: {booking_data['email']}
-        WhatsApp: {booking_data['whatsapp']}
-
-        ═══════════════════════════════════════════════════════════
-        🎯 BOOKING PREFERENCES
-        ═══════════════════════════════════════════════════════════
-
-        Selected Place: {booking_data.get('selected_place', 'Multiple places selected')}
-        Selected Restaurant: {booking_data.get('selected_restaurant', 'None')}
-        Restaurant Reservation: {'Yes' if booking_data.get('make_reservation', False) else 'No'}
-        Visit Date: {booking_data.get('visit_date', 'Not specified')}
-
-        ═══════════════════════════════════════════════════════════
-        💬 SPECIAL REQUESTS
-        ═══════════════════════════════════════════════════════════
-
-        {booking_data.get('special_requests', 'None specified')}
-
-        ═══════════════════════════════════════════════════════════
-        🤖 AI SYSTEM INFORMATION
-        ═══════════════════════════════════════════════════════════
-
-        This booking was processed through our AI-powered tourism portal
-        with enhanced validation and real-time processing capabilities.
-
-        System Features Used:
-        • Real-time form validation
-        • AI-powered place analysis
-        • Encrypted data transmission
-        • Automated notification system
-
-        ═══════════════════════════════════════════════════════════
-        📞 CONTACT & SUPPORT
-        ═══════════════════════════════════════════════════════════
-
-        Created by: Profit Projects Online Virtual Assistance
-        Enterprise Number: K2025200646
-        Contact: Thapelo Kgothatso Thooe
-        Email: kgothatsothooe@gmail.com
-
-        For booking inquiries: secretary@tshwanetourism.com
-
-        ═══════════════════════════════════════════════════════════
-        """
-
-        # Try to send email if credentials are available
-        if sender_password:
-            try:
-                # Create message
-                msg = MIMEMultipart()
-                msg['From'] = sender_email
-                msg['Subject'] = subject
-
-                # Add body
-                msg.attach(MIMEText(email_content, 'plain'))
-
-                # Create server connection
-                server = smtplib.SMTP('smtp.gmail.com', 587)
-                server.starttls()
-                server.login(sender_email, sender_password)
-
-                # Send to secretary
-                msg['To'] = secretary_email
-                text = msg.as_string()
-                server.sendmail(sender_email, secretary_email, text)
-
-                # Send to developer
-                msg['To'] = developer_email
-                text = msg.as_string()
-                server.sendmail(sender_email, developer_email, text)
-
-                server.quit()
-
-                st.success(
-                    "📧 Email sent successfully to secretary and developer!")
-                return True
-
-            except Exception as e:
-                st.warning(
-                    f"Email sending failed: {e}. Saving to file instead.")
-                # Fall back to file saving
-                pass
-
-        # Save to file as fallback
-        with open(f"email_booking_{booking_data['booking_id']}.txt", 'w', encoding='utf-8') as f:
-            f.write(email_content)
-
-        st.info("📧 Booking details saved to file. Email credentials not configured.")
-        return False
-
-    except Exception as e:
-        st.error(f"Error in email function: {e}")
-        return False
 
 
 def display_ai_weather_suggestions():
@@ -4103,766 +3912,6 @@ def calculate_booking_score(booking_data):
     if booking_data.get('timestamp') or booking_data.get('visit_date'):
         score += 0.2
     return score
-
-
-def create_comprehensive_tour_planner():
-    """Create a comprehensive tour planning interface using all crawled data"""
-
-    # Load all available data
-    places_data = load_enhanced_places_data()
-    restaurants_data = load_restaurants_data()
-    weather_data = load_weather_data()
-
-    st.markdown("""
-    <style>
-    .tour-planner-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 25px;
-        border-radius: 20px;
-        margin-bottom: 25px;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-        border: 2px solid rgba(255,255,255,0.1);
-        position: relative;
-        overflow: hidden;
-    }
-    .tour-planner-header::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-        animation: shimmer 2s infinite;
-    }
-    @keyframes shimmer {
-        0% { left: -100%; }
-        100% { left: 100%; }
-    }
-    .plan-card {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 15px;
-        padding: 20px;
-        margin: 15px 0;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-        border-left: 4px solid #667eea;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .plan-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-    }
-    </style>
-    <div class="tour-planner-header">
-        <h2 style="color: white; text-align: center; margin: 0; font-size: 2.2em; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">🗺️ AI-Powered Tshwane Tour Planner</h2>
-        <p style="color: white; text-align: center; margin: 15px 0 0 0; font-size: 1.1em; opacity: 0.95;">Plan your perfect day, week, or month in Tshwane using real data from our tourism portal</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Planning mode selector
-    planning_mode = st.selectbox(
-        "Choose Your Planning Mode",
-        ["Daily Tour", "Weekly Adventure", "Monthly Explorer"],
-        help="Select how long you want to plan for"
-    )
-
-    # User preferences
-    col1, col2 = st.columns(2)
-    with col1:
-        budget = st.selectbox(
-            "Budget Range", ["Budget", "Mid-range", "Luxury"])
-        group_size = st.selectbox(
-            "Group Size", ["Solo", "Couple", "Family (3-5)", "Group (6+)"])
-        interests = st.multiselect(
-            "Interests",
-            ["History & Culture", "Nature & Outdoors", "Food & Dining", "Shopping",
-                "Adventure", "Relaxation", "Photography", "Family Activities"]
-        )
-
-    with col2:
-        preferred_weather = st.selectbox(
-            "Weather Preference", ["Any", "Indoor Only", "Outdoor Only", "Mixed"])
-        mobility = st.selectbox(
-            "Mobility", ["Full Mobility", "Limited Mobility", "Wheelchair Accessible"])
-        pace = st.selectbox("Pace", ["Relaxed", "Moderate", "Active"])
-
-    # Generate plan button
-    if st.button("🤖 Generate AI Tour Plan", type="primary"):
-        # Enhanced loading experience with multiple steps
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-
-        # Step 1: Analyzing preferences
-        status_text.text("🧠 AI is analyzing your preferences...")
-        progress_bar.progress(20)
-        time.sleep(1.5)
-
-        # Step 2: Loading data
-        status_text.text("📊 Loading tourism data from all sources...")
-        progress_bar.progress(40)
-        time.sleep(1.5)
-
-        # Step 3: Filtering options
-        status_text.text("🔍 Filtering places based on your criteria...")
-        progress_bar.progress(60)
-        time.sleep(1.5)
-
-        # Step 4: Creating optimal plan
-        status_text.text("🎯 Creating your optimal tour plan...")
-        progress_bar.progress(80)
-        time.sleep(1.5)
-
-        # Step 5: Finalizing
-        status_text.text("✨ Finalizing your perfect tour plan...")
-        progress_bar.progress(100)
-        time.sleep(1)
-
-        # Clear loading elements
-        progress_bar.empty()
-        status_text.empty()
-
-           if planning_mode == "Daily Tour":
-                plan = generate_daily_tour_plan(places_data, restaurants_data, weather_data,
-                                                budget, group_size, interests, preferred_weather, mobility, pace)
-                display_daily_plan(plan)
-            elif planning_mode == "Weekly Adventure":
-                plan = generate_weekly_plan(places_data, restaurants_data, weather_data,
-                                            budget, group_size, interests, preferred_weather, mobility, pace)
-                display_weekly_plan(plan)
-            else:
-                plan = generate_monthly_plan(places_data, restaurants_data, weather_data,
-                                             budget, group_size, interests, preferred_weather, mobility, pace)
-                display_monthly_plan(plan)
-
-
-def load_enhanced_places_data():
-    """Load and enhance places data from all available sources"""
-    import pandas as pd
-
-    places = []
-
-    # Load main places CSV
-    try:
-        df_places = pd.read_csv('tshwane_places.csv')
-        for _, row in df_places.iterrows():
-            places.append({
-                'name': row['name'],
-                'type': row['type'],
-                'description': row.get('description', ''),
-                'category': row['type'],
-                'source': 'main_places'
-            })
-    except Exception as e:
-        st.warning(f"Could not load main places data: {e}")
-
-    # Load descriptions CSV
-    try:
-        df_desc = pd.read_csv('tshwane_descriptions.csv')
-        for _, row in df_desc.iterrows():
-            places.append({
-                'name': row['place_name'],
-                'type': row['category'],
-                'description': row['long_description'],
-                'short_description': row['short_description'],
-                'highlights': row.get('highlights', ''),
-                'facilities': row.get('facilities', ''),
-                'opening_hours': row.get('opening_hours', ''),
-                'entrance_fee': row.get('entrance_fee', ''),
-                'accessibility': row.get('accessibility', ''),
-                'best_time': row.get('best_time', ''),
-                'visit_duration': row.get('visit_duration', ''),
-                'source': 'descriptions'
-            })
-    except Exception as e:
-        st.warning(f"Could not load descriptions data: {e}")
-
-    # Load coordinates CSV
-    try:
-        df_coords = pd.read_csv('tshwane_coordinates.csv')
-        coords_dict = {}
-        for _, row in df_coords.iterrows():
-            coords_dict[row['name']] = {
-                'lat': row.get('lat', None),
-                'lng': row.get('lng', None)
-            }
-
-        # Merge coordinates with places
-        for place in places:
-            if place['name'] in coords_dict:
-                place.update(coords_dict[place['name']])
-    except Exception as e:
-        st.warning(f"Could not load coordinates data: {e}")
-
-    return places
-
-
-def load_restaurants_data():
-    """Load restaurants data"""
-    import pandas as pd
-
-    restaurants = []
-    try:
-        df_places = pd.read_csv('tshwane_places.csv')
-        restaurant_data = df_places[df_places['type'] == 'restaurant']
-
-        for _, row in restaurant_data.iterrows():
-            restaurants.append({
-                'name': row['name'],
-                'description': row.get('description', ''),
-                'type': 'restaurant',
-                'cuisine': 'Various',  # Could be enhanced with more data
-                'price_range': 'Mid-range',  # Could be enhanced
-                'source': 'main_places'
-            })
-    except Exception as e:
-        st.warning(f"Could not load restaurants data: {e}")
-
-    return restaurants
-
-
-def load_weather_data():
-    """Load weather data"""
-    import pandas as pd
-
-    weather_data = {}
-    try:
-        df_weather = pd.read_csv('tshwane_temperature_data.csv')
-        weather_data = df_weather.to_dict('records')
-    except Exception as e:
-        st.warning(f"Could not load weather data: {e}")
-
-    return weather_data
-
-
-def generate_daily_tour_plan(places_data, restaurants_data, weather_data,
-                             budget, group_size, interests, weather_pref, mobility, pace):
-    """Generate a comprehensive daily tour plan"""
-
-    plan = {
-        'morning': [],
-        'afternoon': [],
-        'evening': [],
-        'dining': [],
-        'accommodation': None,
-        'total_cost': 0,
-        'total_duration': 0,
-        'recommendations': []
-    }
-
-    # Filter places based on preferences
-    filtered_places = filter_places_by_preferences(
-        places_data, interests, weather_pref, mobility, budget)
-    filtered_restaurants = filter_restaurants_by_preferences(
-        restaurants_data, budget, group_size)
-
-    # Morning activities (8:00 - 12:00)
-    morning_places = [p for p in filtered_places if p.get(
-        'best_time', '').lower() in ['morning', 'all day']]
-    if morning_places:
-        plan['morning'] = select_optimal_places(morning_places, 2, pace)
-
-    # Afternoon activities (12:00 - 17:00)
-    afternoon_places = [p for p in filtered_places if p.get(
-        'best_time', '').lower() in ['afternoon', 'all day']]
-    if afternoon_places:
-        plan['afternoon'] = select_optimal_places(afternoon_places, 2, pace)
-
-    # Evening activities (17:00 - 21:00)
-    evening_places = [p for p in filtered_places if p.get(
-        'best_time', '').lower() in ['evening', 'all day']]
-    if evening_places:
-        plan['evening'] = select_optimal_places(evening_places, 1, pace)
-
-    # Dining recommendations
-    plan['dining'] = select_optimal_restaurants(filtered_restaurants, 3)
-
-    # Accommodation recommendation
-    accommodation_places = [
-        p for p in filtered_places if p['type'] == 'accommodation']
-    if accommodation_places:
-        plan['accommodation'] = select_optimal_places(
-            accommodation_places, 1, pace)[0]
-
-    # Calculate costs and duration
-    plan['total_cost'] = calculate_plan_cost(plan, budget)
-    plan['total_duration'] = calculate_plan_duration(plan, pace)
-    plan['recommendations'] = generate_plan_recommendations(
-        plan, weather_data, group_size)
-
-    return plan
-
-
-def filter_places_by_preferences(places, interests, weather_pref, mobility, budget):
-    """Filter places based on user preferences"""
-    filtered = []
-
-    for place in places:
-        # Check if place matches interests
-        if interests:
-            place_desc = (place.get('description', '') + ' ' +
-                          place.get('short_description', '')).lower()
-            place_highlights = place.get('highlights', '').lower()
-
-            interest_matches = False
-            for interest in interests:
-                if interest.lower() in place_desc or interest.lower() in place_highlights:
-                    interest_matches = True
-                    break
-
-            if not interest_matches:
-                continue
-
-        # Check weather preference
-        if weather_pref == "Indoor Only":
-            if place.get('type') not in ['museum', 'gallery', 'venue', 'shopping']:
-                continue
-        elif weather_pref == "Outdoor Only":
-            if place.get('type') not in ['attraction', 'garden', 'park', 'nature']:
-                continue
-
-        # Check mobility
-        if mobility == "Wheelchair Accessible":
-            if place.get('accessibility') != "Wheelchair accessible":
-                continue
-
-        # Check budget
-        entrance_fee = place.get('entrance_fee', 'Free')
-        if budget == "Budget" and entrance_fee != "Free":
-            continue
-        elif budget == "Luxury" and entrance_fee == "Free":
-            continue
-
-        filtered.append(place)
-
-    return filtered
-
-
-def filter_restaurants_by_preferences(restaurants, budget, group_size):
-    """Filter restaurants based on preferences"""
-    filtered = []
-
-    for restaurant in restaurants:
-        # Budget filtering
-        price_range = restaurant.get('price_range', 'Mid-range')
-        if budget == "Budget" and price_range == "Luxury":
-            continue
-        elif budget == "Luxury" and price_range == "Budget":
-            continue
-
-        filtered.append(restaurant)
-
-    return filtered
-
-
-def select_optimal_places(places, max_count, pace):
-    """Select optimal places based on pace and variety"""
-    if not places:
-        return []
-
-    # Sort by popularity/importance (could be enhanced with real data)
-    sorted_places = sorted(places, key=lambda x: len(
-        x.get('description', '')), reverse=True)
-
-    # Adjust count based on pace
-    if pace == "Relaxed":
-        count = min(max_count, 1)
-    elif pace == "Moderate":
-        count = min(max_count, 2)
-    else:  # Active
-        count = min(max_count, 3)
-
-    return sorted_places[:count]
-
-
-def select_optimal_restaurants(restaurants, count):
-    """Select optimal restaurants"""
-    if not restaurants:
-        return []
-
-    # Sort by variety and popularity
-    sorted_restaurants = sorted(restaurants, key=lambda x: len(
-        x.get('description', '')), reverse=True)
-    return sorted_restaurants[:count]
-
-
-def calculate_plan_cost(plan, budget):
-    """Calculate total cost of the plan"""
-    total_cost = 0
-
-    for section in ['morning', 'afternoon', 'evening']:
-        for place in plan[section]:
-            fee = place.get('entrance_fee', 'Free')
-            if fee != 'Free':
-                try:
-                    cost = int(fee.replace('R', ''))
-                    total_cost += cost
-                except:
-                    total_cost += 50  # Default cost
-
-    # Add dining costs
-    dining_cost = len(plan['dining']) * 150  # Average meal cost
-    total_cost += dining_cost
-
-    return total_cost
-
-
-def calculate_plan_duration(plan, pace):
-    """Calculate total duration of the plan"""
-    total_duration = 0
-
-    for section in ['morning', 'afternoon', 'evening']:
-        for place in plan[section]:
-            duration = place.get('visit_duration', '1-2 hours')
-            try:
-                # Extract hours from duration string
-                if 'hours' in duration:
-                    hours = int(duration.split()[0])
-                    total_duration += hours
-                else:
-                    total_duration += 1
-            except:
-                total_duration += 1
-
-    # Adjust based on pace
-    if pace == "Relaxed":
-        total_duration *= 1.5
-    elif pace == "Active":
-        total_duration *= 0.8
-
-    return total_duration
-
-
-def generate_plan_recommendations(plan, weather_data, group_size):
-    """Generate personalized recommendations"""
-    recommendations = []
-
-    # Weather-based recommendations
-    if weather_data:
-        recommendations.append(
-            "🌤️ Check the weather forecast before your visit for optimal experience")
-
-    # Group size recommendations
-    if group_size in ["Family (3-5)", "Group (6+)"]:
-        recommendations.append(
-            "👨‍👩‍👧‍👦 Book group activities in advance for better rates")
-
-    # Timing recommendations
-    if plan['morning']:
-        recommendations.append(
-            "🌅 Start early to avoid crowds and enjoy cooler temperatures")
-
-    if plan['afternoon']:
-        recommendations.append(
-            "☀️ Take breaks during peak sun hours (12-3 PM)")
-
-    # Dining recommendations
-    if plan['dining']:
-        recommendations.append(
-            "🍽️ Make restaurant reservations, especially for dinner")
-
-    # Transportation recommendations
-    recommendations.append(
-        "🚗 Consider using ride-sharing services or public transport between locations")
-
-    return recommendations
-
-
-def display_daily_plan(plan):
-    """Display the daily tour plan with visual effects"""
-
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
-        <h3 style="color: white; text-align: center; margin: 0; font-size: 1.8em;">🗺️ Your Perfect Day in Tshwane</h3>
-        <p style="color: white; text-align: center; margin: 10px 0 0 0; opacity: 0.9;">AI-Crafted Itinerary Based on Your Preferences</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Plan summary
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total Duration", f"{plan['total_duration']:.1f} hours")
-    with col2:
-        st.metric("Estimated Cost", f"R{plan['total_cost']}")
-    with col3:
-        st.metric("Places to Visit", len(
-            plan['morning']) + len(plan['afternoon']) + len(plan['evening']))
-
-    # Morning section
-    if plan['morning']:
-        st.markdown("### 🌅 Morning Activities (8:00 AM - 12:00 PM)")
-        for i, place in enumerate(plan['morning']):
-            with st.expander(f"📍 {place['name']}", expanded=True):
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    st.markdown(f"**Type:** {place.get('type', 'Attraction')}")
-                    st.markdown(
-                        f"**Description:** {place.get('description', place.get('short_description', ''))}")
-                    if place.get('highlights'):
-                        st.markdown(f"**Highlights:** {place['highlights']}")
-                    if place.get('facilities'):
-                        st.markdown(f"**Facilities:** {place['facilities']}")
-                with col2:
-                    if place.get('entrance_fee'):
-                        st.info(f"**Entrance:** {place['entrance_fee']}")
-                    if place.get('opening_hours'):
-                        st.info(f"**Hours:** {place['opening_hours']}")
-                    if place.get('visit_duration'):
-                        st.info(f"**Duration:** {place['visit_duration']}")
-
-    # Afternoon section
-    if plan['afternoon']:
-        st.markdown("### ☀️ Afternoon Activities (12:00 PM - 5:00 PM)")
-        for i, place in enumerate(plan['afternoon']):
-            with st.expander(f"📍 {place['name']}", expanded=True):
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    st.markdown(f"**Type:** {place.get('type', 'Attraction')}")
-                    st.markdown(
-                        f"**Description:** {place.get('description', place.get('short_description', ''))}")
-                    if place.get('highlights'):
-                        st.markdown(f"**Highlights:** {place['highlights']}")
-                    if place.get('facilities'):
-                        st.markdown(f"**Facilities:** {place['facilities']}")
-                with col2:
-                    if place.get('entrance_fee'):
-                        st.info(f"**Entrance:** {place['entrance_fee']}")
-                    if place.get('opening_hours'):
-                        st.info(f"**Hours:** {place['opening_hours']}")
-                    if place.get('visit_duration'):
-                        st.info(f"**Duration:** {place['visit_duration']}")
-
-    # Evening section
-    if plan['evening']:
-        st.markdown("### 🌆 Evening Activities (5:00 PM - 9:00 PM)")
-        for i, place in enumerate(plan['evening']):
-            with st.expander(f"📍 {place['name']}", expanded=True):
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    st.markdown(f"**Type:** {place.get('type', 'Attraction')}")
-                    st.markdown(
-                        f"**Description:** {place.get('description', place.get('short_description', ''))}")
-                    if place.get('highlights'):
-                        st.markdown(f"**Highlights:** {place['highlights']}")
-                    if place.get('facilities'):
-                        st.markdown(f"**Facilities:** {place['facilities']}")
-                with col2:
-                    if place.get('entrance_fee'):
-                        st.info(f"**Entrance:** {place['entrance_fee']}")
-                    if place.get('opening_hours'):
-                        st.info(f"**Hours:** {place['opening_hours']}")
-                    if place.get('visit_duration'):
-                        st.info(f"**Duration:** {place['visit_duration']}")
-
-    # Dining recommendations
-    if plan['dining']:
-        st.markdown("### 🍽️ Dining Recommendations")
-        for i, restaurant in enumerate(plan['dining']):
-            with st.expander(f"🍽️ {restaurant['name']}", expanded=True):
-                st.markdown(
-                    f"**Cuisine:** {restaurant.get('cuisine', 'Various')}")
-                st.markdown(
-                    f"**Price Range:** {restaurant.get('price_range', 'Mid-range')}")
-                st.markdown(
-                    f"**Description:** {restaurant.get('description', '')}")
-
-    # Accommodation recommendation
-    if plan['accommodation']:
-        st.markdown("### 🏨 Accommodation Recommendation")
-        with st.expander(f"🏨 {plan['accommodation']['name']}", expanded=True):
-            st.markdown(
-                f"**Type:** {plan['accommodation'].get('type', 'Accommodation')}")
-            st.markdown(
-                f"**Description:** {plan['accommodation'].get('description', '')}")
-            if plan['accommodation'].get('facilities'):
-                st.markdown(
-                    f"**Facilities:** {plan['accommodation']['facilities']}")
-
-    # Recommendations
-    if plan['recommendations']:
-        st.markdown("### 💡 AI Recommendations")
-        for rec in plan['recommendations']:
-            st.info(rec)
-
-    # Download plan
-    plan_text = format_plan_for_download(plan)
-    st.download_button(
-        label="📥 Download Your Tour Plan",
-        data=plan_text,
-        file_name="tshwane_daily_tour_plan.txt",
-        mime="text/plain"
-    )
-
-
-def format_plan_for_download(plan):
-    """Format plan for download"""
-    text = "🗺️ TSHWANE DAILY TOUR PLAN\n"
-    text += "=" * 50 + "\n\n"
-
-    text += f"Total Duration: {plan['total_duration']:.1f} hours\n"
-    text += f"Estimated Cost: R{plan['total_cost']}\n\n"
-
-    if plan['morning']:
-        text += "🌅 MORNING ACTIVITIES (8:00 AM - 12:00 PM)\n"
-        text += "-" * 40 + "\n"
-        for place in plan['morning']:
-            text += f"📍 {place['name']}\n"
-            text += f"   Type: {place.get('type', 'Attraction')}\n"
-            text += f"   Entrance: {place.get('entrance_fee', 'Free')}\n"
-            text += f"   Duration: {place.get('visit_duration', '1-2 hours')}\n\n"
-
-    if plan['afternoon']:
-        text += "☀️ AFTERNOON ACTIVITIES (12:00 PM - 5:00 PM)\n"
-        text += "-" * 40 + "\n"
-        for place in plan['afternoon']:
-            text += f"📍 {place['name']}\n"
-            text += f"   Type: {place.get('type', 'Attraction')}\n"
-            text += f"   Entrance: {place.get('entrance_fee', 'Free')}\n"
-            text += f"   Duration: {place.get('visit_duration', '1-2 hours')}\n\n"
-
-    if plan['evening']:
-        text += "🌆 EVENING ACTIVITIES (5:00 PM - 9:00 PM)\n"
-        text += "-" * 40 + "\n"
-        for place in plan['evening']:
-            text += f"📍 {place['name']}\n"
-            text += f"   Type: {place.get('type', 'Attraction')}\n"
-            text += f"   Entrance: {place.get('entrance_fee', 'Free')}\n"
-            text += f"   Duration: {place.get('visit_duration', '1-2 hours')}\n\n"
-
-    if plan['dining']:
-        text += "🍽️ DINING RECOMMENDATIONS\n"
-        text += "-" * 40 + "\n"
-        for restaurant in plan['dining']:
-            text += f"🍽️ {restaurant['name']}\n"
-            text += f"   Cuisine: {restaurant.get('cuisine', 'Various')}\n"
-            text += f"   Price Range: {restaurant.get('price_range', 'Mid-range')}\n\n"
-
-    if plan['accommodation']:
-        text += "🏨 ACCOMMODATION\n"
-        text += "-" * 40 + "\n"
-        text += f"🏨 {plan['accommodation']['name']}\n"
-        text += f"   Type: {plan['accommodation'].get('type', 'Accommodation')}\n\n"
-
-    if plan['recommendations']:
-        text += "💡 RECOMMENDATIONS\n"
-        text += "-" * 40 + "\n"
-        for rec in plan['recommendations']:
-            text += f"• {rec}\n"
-
-    return text
-
-
-def generate_weekly_plan(places_data, restaurants_data, weather_data,
-                         budget, group_size, interests, weather_pref, mobility, pace):
-    """Generate a weekly tour plan"""
-    # This would create 7 daily plans with variety
-    weekly_plan = {
-        'days': [],
-        'total_cost': 0,
-        'themes': []
-    }
-
-    # Generate 7 daily plans
-    for day in range(7):
-        daily_plan = generate_daily_tour_plan(places_data, restaurants_data, weather_data,
-                                              budget, group_size, interests, weather_pref, mobility, pace)
-        weekly_plan['days'].append(daily_plan)
-        weekly_plan['total_cost'] += daily_plan['total_cost']
-
-    # Add weekly themes
-    weekly_plan['themes'] = [
-        "Historical Tshwane",
-        "Nature & Outdoors",
-        "Cultural Experience",
-        "Food & Dining",
-        "Adventure & Activities",
-        "Relaxation & Wellness",
-        "Shopping & Entertainment"
-    ]
-
-    return weekly_plan
-
-
-def display_weekly_plan(plan):
-    """Display the weekly tour plan"""
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-        <h3 style="color: white; text-align: center;">🗺️ Your Week in Tshwane</h3>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Weekly summary
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total Duration",
-                  f"{sum(d['total_duration'] for d in plan['days']):.1f} hours")
-    with col2:
-        st.metric("Total Cost", f"R{plan['total_cost']}")
-    with col3:
-        st.metric("Days Planned", len(plan['days']))
-
-    # Display each day
-    for i, (day_plan, theme) in enumerate(zip(plan['days'], plan['themes'])):
-        st.markdown(f"### 📅 Day {i+1}: {theme}")
-        display_daily_plan(day_plan)
-
-
-def generate_monthly_plan(places_data, restaurants_data, weather_data,
-                          budget, group_size, interests, weather_pref, mobility, pace):
-    """Generate a monthly tour plan"""
-    # This would create 4 weekly plans with seasonal considerations
-    monthly_plan = {
-        'weeks': [],
-        'total_cost': 0,
-        'seasonal_highlights': []
-    }
-
-    # Generate 4 weekly plans
-    for week in range(4):
-        weekly_plan = generate_weekly_plan(places_data, restaurants_data, weather_data,
-                                           budget, group_size, interests, weather_pref, mobility, pace)
-        monthly_plan['weeks'].append(weekly_plan)
-        monthly_plan['total_cost'] += weekly_plan['total_cost']
-
-    # Add seasonal highlights
-    monthly_plan['seasonal_highlights'] = [
-        "Jacaranda Season (October)",
-        "Spring Flower Shows",
-        "Summer Festivals",
-        "Autumn Cultural Events"
-    ]
-
-    return monthly_plan
-
-
-def display_monthly_plan(plan):
-    """Display the monthly tour plan"""
-    st.markdown("""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-        <h3 style="color: white; text-align: center;">🗺️ Your Month in Tshwane</h3>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Monthly summary
-    col1, col2, col3 = st.columns(3)
-    total_duration = sum(sum(d['total_duration']
-                         for d in w['days']) for w in plan['weeks'])
-    with col1:
-        st.metric("Total Duration", f"{total_duration:.1f} hours")
-    with col2:
-        st.metric("Total Cost", f"R{plan['total_cost']}")
-    with col3:
-        st.metric("Weeks Planned", len(plan['weeks']))
-
-    # Display each week
-    for i, week_plan in enumerate(plan['weeks']):
-        st.markdown(f"### 📅 Week {i+1}")
-        display_weekly_plan(week_plan)
-
-    # Seasonal highlights
-    if plan['seasonal_highlights']:
-        st.markdown("### 🌸 Seasonal Highlights")
-        for highlight in plan['seasonal_highlights']:
-            st.info(highlight)
 
 
 if __name__ == "__main__":
