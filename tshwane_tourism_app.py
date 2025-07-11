@@ -1907,18 +1907,15 @@ def display_enhanced_sidebar():
 
         # Display contact info in sidebar when contact section is active
         if st.session_state.get('current_section') == 'contact':
-            st.markdown("### 👥 Quick Team Info")
+            st.markdown("### 👤 Developer Info")
             developers = load_developer_details()
             if developers:
-                for dev in developers[:3]:  # Show first 3 developers in sidebar
+                for dev in developers:  # Show all developers (now just one)
                     st.markdown(f"""
                     **{dev['name']}**  
                     {dev['role']}  
                     📧 {dev['email']}
                     """)
-                if len(developers) > 3:
-                    st.caption(
-                        f"... and {len(developers) - 3} more team members")
 
         # Display secretary info in sidebar when email secretary section is active
         if st.session_state.get('current_section') == 'email_secretary':
@@ -2573,9 +2570,9 @@ def display_developer_contact_info():
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown("### 👥 Development Team")
+    st.markdown("### 👤 Lead Developer")
     st.markdown(
-        "*Meet the talented team behind the Tshwane Tourism Interactive Portal*")
+        "*Meet the developer behind the Tshwane Tourism Interactive Portal*")
 
     for developer in developers:
         st.markdown(f"""
@@ -2586,7 +2583,8 @@ def display_developer_contact_info():
                 📧 <a href="mailto:{developer['email']}" style="color: #00d4aa;">{developer['email']}</a><br>
                 📞 <a href="tel:{developer['phone']}" style="color: #00d4aa;">{developer['phone']}</a><br>
                 💼 <a href="https://{developer['linkedin']}" target="_blank" style="color: #00d4aa;">LinkedIn</a><br>
-                🐙 <a href="https://{developer['github']}" target="_blank" style="color: #00d4aa;">GitHub</a>
+                🐙 <a href="https://github.com/{developer['github']}" target="_blank" style="color: #00d4aa;">GitHub</a><br>
+                🐦 <a href="https://x.com/KgothatsoThooe" target="_blank" style="color: #00d4aa;">X (Twitter)</a>
             </div>
             <div style="margin-top: 12px;">
                 <strong style="color: #ffffff;">Skills:</strong><br>
