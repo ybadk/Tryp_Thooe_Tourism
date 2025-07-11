@@ -735,9 +735,9 @@ def display_tutorial():
             </div>
             """, unsafe_allow_html=True)
             # Navigation buttons
-            nav_cols = st.columns([1,1,1,1])
+            nav_cols = st.columns([1, 1, 1, 1])
             with nav_cols[0]:
-                if st.button('Back', key='tutorial_back_btn', disabled=current_step==0):
+                if st.button('Back', key='tutorial_back_btn', disabled=current_step == 0):
                     if current_step > 0:
                         st.session_state.tutorial_step = current_step - 1
             with nav_cols[1]:
@@ -745,11 +745,11 @@ def display_tutorial():
                     st.session_state.show_tutorial = False
                     st.session_state.tutorial_step = 0
             with nav_cols[2]:
-                if st.button('Next', key='tutorial_next_btn', disabled=current_step==n_steps-1):
+                if st.button('Next', key='tutorial_next_btn', disabled=current_step == n_steps-1):
                     if current_step < n_steps-1:
                         st.session_state.tutorial_step = current_step + 1
             with nav_cols[3]:
-                if st.button('Finish', key='tutorial_finish_btn', disabled=current_step!=n_steps-1):
+                if st.button('Finish', key='tutorial_finish_btn', disabled=current_step != n_steps-1):
                     st.session_state.show_tutorial = False
                     st.session_state.tutorial_step = 0
 
@@ -1759,6 +1759,44 @@ def display_enhanced_sidebar():
         </style>
         """, unsafe_allow_html=True)
         st.markdown("### 📱 Social & Contact Info")
+        # Restore only the first 5 unique social/contact links, skip NaN/missing URLs, and use animated button style
+        import pandas as pd
+        st.markdown("""
+        <style>
+        .social-btn {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            background: linear-gradient(90deg, #232526 0%, #414345 100%);
+            color: #f5f7fa;
+            border: none;
+            border-radius: 30px;
+            padding: 12px 22px;
+            margin: 8px 0;
+            font-size: 1.08rem;
+            font-weight: 600;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+            cursor: pointer;
+            transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), box-shadow 0.18s cubic-bezier(0.4,0,0.2,1), background 0.18s, color 0.18s;
+            outline: none;
+            gap: 14px;
+            letter-spacing: 0.01em;
+        }
+        .social-btn:hover {
+            transform: scale(1.07) translateX(6px);
+            background: linear-gradient(90deg, #a8edea 0%, #fed6e3 100%);
+            color: #232526;
+            box-shadow: 0 8px 24px rgba(0,212,170,0.18);
+        }
+        .social-icon {
+            font-size: 1.35rem;
+            margin-right: 12px;
+            width: 28px;
+            text-align: center;
+        }
+        </style>
+        """, unsafe_allow_html=True)
         try:
             df_social = pd.read_csv('tshwane_social_links.csv')
             icon_map = {
@@ -1769,29 +1807,28 @@ def display_enhanced_sidebar():
                 'linkedin': '💼',
                 'tiktok': '🎵',
             }
+            shown = set()
+            count = 0
             for _, row in df_social.iterrows():
-                platform = str(row.get('platform', 'Unknown')).lower()
-                url = row.get('url', '')
-                text = row.get('text', platform.title())
-                icon = icon_map.get(platform.split(
-                    ',')[0].strip().lower(), '🔗')
-                if url:
+                url = str(row.get('url', '')).strip()
+                text = str(row.get('text', '') or row.get(
+                    'platform', '')).strip()
+                platform = str(row.get('platform', '')).lower()
+                key = (url, text)
+                if url and url.lower() != 'nan' and key not in shown:
+                    icon = icon_map.get(platform.split(
+                        ',')[0].strip().lower(), '🔗')
                     st.markdown(f"""
                     <a href='{url}' target='_blank' class='social-btn' style='text-decoration:none;'>
                         <span class='social-icon'>{icon}</span> {text}
                     </a>
                     """, unsafe_allow_html=True)
+                    shown.add(key)
+                    count += 1
+                if count >= 5:
+                    break
         except Exception:
             st.info("No social links found.")
-        # Contact info as animated buttons
-        st.markdown(f"""
-        <a href='mailto:secretary@tshwanetourism.com' class='social-btn' style='text-decoration:none;'>
-            <span class='social-icon'>✉️</span> Email: secretary@tshwanetourism.com
-        </a>
-        <a href='https://wa.me/27XXXXXXXXX' class='social-btn' style='text-decoration:none;'>
-            <span class='social-icon'>💬</span> WhatsApp: +27 XX XXX XXXX
-        </a>
-        """, unsafe_allow_html=True)
 
         # Tutorial button
         if st.button("📚 Start Tutorial", key="tutorial_btn", help="Learn how to use the app"):
@@ -1834,6 +1871,7 @@ def display_enhanced_sidebar():
             ("Weather Guide", "weather_guide", '🌤️'),
             ("Analytics", "analytics", '📊'),
             ("Contact Info", "contact", '📞'),
+            ("AI Chat Assistant", "chat", '🤖'),
         ]
         st.markdown("<div style='margin-top:18px;'></div>",
                     unsafe_allow_html=True)
@@ -2026,8 +2064,22 @@ def display_enhanced_booking_form():
         else:
             st.warning(
                 "⚠️ Please fill in all required fields marked with * and select at least one place.")
+            # Debug info for missing fields
+            missing = []
+            if not name:
+                missing.append("Full Name")
+            if not email:
+                missing.append("Email Address")
+            if not whatsapp:
+                missing.append("WhatsApp Number")
+            if not any(selections[t] for t in types):
+                missing.append("At least one place selection")
+            if missing:
+                st.info(f"Missing: {', '.join(missing)}")
         submitted = st.form_submit_button(
-            "🚀 Submit Smart Booking", disabled=not form_valid)
+            "🚀 Submit Smart Booking", disabled=not form_valid,
+            help="Submit your booking with AI-powered processing"
+        )
         if submitted and form_valid:
             # Flatten selections into a list of dicts with type and time
             selected_places = []
@@ -2044,6 +2096,9 @@ def display_enhanced_booking_form():
                 'whatsapp': whatsapp,
                 'visit_date': str(visit_date),
                 'selected_places': selected_places,
+                'selected_place': selected_places[0]['name'] if selected_places else '',
+                'selected_restaurant': '',
+                'make_reservation': False,
                 'special_requests': special_requests,
                 'timestamp': datetime.datetime.now().isoformat(),
                 'booking_id': hashlib.md5(f"{name}{email}{datetime.datetime.now()}".encode()).hexdigest()[:8],
@@ -2266,6 +2321,22 @@ def display_main_content():
             pass
         return
 
+    # Check if the user wants to see the chat interface
+    if st.session_state.get('current_section') == 'chat':
+        with col1:
+            st.subheader("🤖 AI Chat Assistant")
+            # Import and display chat interface
+            try:
+                from chat_interface import display_chat_interface_main
+                display_chat_interface_main()
+            except ImportError:
+                st.error(
+                    "Chat interface module not found. Please ensure chat_interface.py is in the same directory.")
+        with col2:
+            st.subheader("📊 Chat Analytics")
+            st.info("Chat analytics will appear here when you start chatting.")
+        return
+
     with col1:
         # Component-based UI (v0-inspired)
         project = st.session_state.component_system.create_code_project(
@@ -2334,6 +2405,7 @@ def display_main_content():
             m = folium.Map(location=[default_lat, default_lon], zoom_start=11)
 
             # Add markers for each place with coordinates
+            import pandas as pd
             for place in st.session_state.places_data:
                 lat = place.get('lat', None)
                 lon = place.get('lng', None)
@@ -2648,56 +2720,6 @@ def get_enhanced_weather_suggestions(weather_condition: str, places_data: list, 
     suggestions.sort(key=lambda x: x.get(
         'weather_suitability_score', 0), reverse=True)
     return suggestions[:5]
-
-
-def display_sidebar_content():
-    """Display social links and contact information"""
-    # Display social links
-    if st.session_state.social_links:
-        st.subheader("📱 Social Media")
-        for social in st.session_state.social_links:
-            st.markdown(f"[{social['platform']}]({social['url']})")
-
-    # Display contact info
-    if st.session_state.contact_info:
-        st.subheader("📞 Contact Information")
-        if st.session_state.contact_info.get('emails'):
-            st.write("📧 Emails:")
-            for email in st.session_state.contact_info['emails'][:3]:
-                st.write(f"• {email}")
-
-        if st.session_state.contact_info.get('phones'):
-            st.write("📱 Phones:")
-            for phone in st.session_state.contact_info['phones'][:3]:
-                st.write(f"• {phone}")
-
-
-def save_scraped_data(data):
-    """Save scraped data to files"""
-    try:
-        # Save as JSON
-        with open('scraped_website_data.json', 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-
-        # Save places as CSV
-        if data['places']:
-            places_df = pd.DataFrame(data['places'])
-            places_df.to_csv('tshwane_places.csv', index=False)
-
-        # Save restaurants as CSV
-        if data['restaurants']:
-            restaurants_df = pd.DataFrame(data['restaurants'])
-            restaurants_df.to_csv('tshwane_restaurants.csv', index=False)
-
-        # Save social links as CSV
-        if data['social_links']:
-            social_df = pd.DataFrame(data['social_links'])
-            social_df.to_csv('tshwane_social_links.csv', index=False)
-
-        st.success("✅ Data saved to project folder!")
-
-    except Exception as e:
-        st.error(f"Error saving data: {e}")
 
 
 def display_enhanced_gallery():
@@ -3786,19 +3808,19 @@ def display_google_maps_with_places():
         if filter_text:
             df = df[df['name'].str.contains(filter_text, case=False, na=False) | df['type'].str.contains(
                 filter_text, case=False, na=False)]
-        st.markdown('#### Quick Google Maps Search Links for All Places:')
-        # Table/grid layout
-        n_cols = 4
-        rows = [df.iloc[i:i+n_cols] for i in range(0, len(df), n_cols)]
-        for row in rows:
-            cols = st.columns(n_cols)
-            for idx, (_, place) in enumerate(row.iterrows()):
-                name = place.get('name', '')
-                ptype = place.get('type', '')
-                url = f"https://www.google.com/maps/search/{urllib.parse.quote_plus(name + ' Tshwane')}"
-                with cols[idx]:
-                    st.markdown(
-                        f"**[{name}]({url})**<br><span style='font-size:0.9em;color:#888;'>Type: {ptype}</span>", unsafe_allow_html=True)
+        with st.expander('Quick Google Maps Search Links for All Places', expanded=False):
+            # Table/grid layout
+            n_cols = 4
+            rows = [df.iloc[i:i+n_cols] for i in range(0, len(df), n_cols)]
+            for row in rows:
+                cols = st.columns(n_cols)
+                for idx, (_, place) in enumerate(row.iterrows()):
+                    name = place.get('name', '')
+                    ptype = place.get('type', '')
+                    url = f"https://www.google.com/maps/search/{urllib.parse.quote_plus(name + ' Tshwane')}"
+                    with cols[idx]:
+                        st.markdown(
+                            f"**[{name}]({url})**<br><span style='font-size:0.9em;color:#888;'>Type: {ptype}</span>", unsafe_allow_html=True)
         # Custom Google Maps with all markers (if lat/lng available)
         if 'lat' in df.columns and 'lng' in df.columns and not df[['lat', 'lng']].isnull().all().all():
             # Generate Static Maps API URL (limited by Google API, but demo for a few markers)
