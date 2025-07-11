@@ -410,7 +410,8 @@ class TourismChatInterface:
         for i, message in enumerate(messages):
             fade_class = " fade-out" if i == 0 and len(messages) == 3 else ""
             with st.chat_message(message.sender):
-                st.markdown(f'<div class="chat-message{fade_class}">{message.content}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="chat-message{fade_class}">{message.content}</div>', unsafe_allow_html=True)
                 if message.metadata:
                     st.caption(f"Additional info: {message.metadata}")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -426,10 +427,12 @@ class TourismChatInterface:
 
             # Show custom loader before AI responds
             with st.container():
-                st.markdown('<div class="custom-loader">', unsafe_allow_html=True)
-                st.markdown('<span class="dot"></span><span class="dot"></span><span class="dot"></span>', unsafe_allow_html=True)
+                st.markdown('<div class="custom-loader">',
+                            unsafe_allow_html=True)
+                st.markdown(
+                    '<span class="dot"></span><span class="dot"></span><span class="dot"></span>', unsafe_allow_html=True)
                 st.markdown('</div>', unsafe_allow_html=True)
-                time.sleep(1.5)  # Simulate thinking/research
+                time.sleep(3)  # Ensure loader lasts at least 3 seconds
 
             # Get AI response
             ai_response = self.get_ai_response(user_input)
@@ -542,6 +545,9 @@ class TourismChatInterface:
 
         try:
             with st.spinner("🔄 Initializing AI chat capabilities with Hugging Face models..."):
+                # Ensure minimum 3-second loading time
+                start_time = time.time()
+
                 # Load Hugging Face model first
                 self.load_huggingface_model()
 
@@ -561,6 +567,11 @@ class TourismChatInterface:
                     st.info(
                         "ℹ️ AI chat will use fallback responses. Install LangChain for enhanced capabilities.")
 
+                # Ensure minimum 3-second loading time
+                elapsed_time = time.time() - start_time
+                if elapsed_time < 3:
+                    time.sleep(3 - elapsed_time)
+
         except Exception as e:
             st.error(f"Error initializing vector store: {e}")
 
@@ -571,6 +582,9 @@ class TourismChatInterface:
 
         try:
             with st.spinner("🔄 Loading Microsoft Phi-4-mini-flash-reasoning model..."):
+                # Ensure minimum 3-second loading time
+                start_time = time.time()
+
                 model_name = "microsoft/Phi-4-mini-flash-reasoning"
 
                 # Load tokenizer and model
@@ -596,6 +610,11 @@ class TourismChatInterface:
 
                 st.session_state.hf_pipeline = hf_pipeline
                 st.success("✅ Hugging Face model loaded successfully!")
+
+                # Ensure minimum 3-second loading time
+                elapsed_time = time.time() - start_time
+                if elapsed_time < 3:
+                    time.sleep(3 - elapsed_time)
 
         except Exception as e:
             st.error(f"Error loading Hugging Face model: {e}")
